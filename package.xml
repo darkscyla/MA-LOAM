@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ma_loam</name>
+  <version>1.0.0</version>
+  <description>Model aware lidar odometry and mapping</description>
+
+  <author email="darkscyla@gmail.com">Muhammad Hamza Sattar</author>
+  <maintainer email="darkscyla@gmail.com">Muhammad Hamza Sattar</maintainer>
+
+  <license>Mit</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>gazebo_ros</depend>
+
+  <!-- Export the path of the meshes -->
+  <export>
+    <gazebo_ros gazebo_model_path="${prefix}/resources/environments" />
+    <gazebo_ros gazebo_media_path="${prefix}/resources/environments" />
+  </export>
+
+</package>

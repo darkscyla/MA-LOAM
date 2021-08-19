@@ -1,0 +1,23 @@
+<launch>
+  <!-- Default arguments -->
+  <arg name="debug" default="false" />
+  <arg name="environment" default="simple_corridor" />
+  <arg name="gui" default="true" />
+  <arg name="pause" default="false" />
+  <arg name="world" default="$(find ma_loam)/resources/environments/$(arg environment)/$(arg environment).world" />
+
+  <node name="pub_text" pkg="rostopic" type="rostopic" args="pub /msg std_msgs/String '$(arg world)'" output="screen" />
+  <node name="print_text" pkg="rostopic" type="rostopic" args="echo /msg" output="screen" />
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <!-- Arguments  -->
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg pause)" />
+    <arg name="world_name" value="$(arg world)" />
+
+    <!-- Properties -->
+    <arg name="recording" value="false" />
+    <arg name="use_sim_time" value="true" />
+  </include>
+</launch>
