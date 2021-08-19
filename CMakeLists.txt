@@ -30,12 +30,6 @@ install(DIRECTORY launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-## Create and install a symbolic link to resources rather than copying it over
-# install(CODE "execute_process( \
-#     COMMAND ${CMAKE_COMMAND} -E create_symlink resources resources)"
-#     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-
 #############
 ## Testing ##
 #############
