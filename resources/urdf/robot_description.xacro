@@ -7,8 +7,7 @@
   <joint name="footprint" type="fixed">
     <parent link="base_footprint" />
     <child link="base_link" />
-    <!-- Lift it above ground a little bit -->
-    <origin xyz="0 0 0.0501" rpy="0 0 0" />
+    <origin xyz="0 0 0.05" rpy="0 0 0" />
   </joint>
   <link name="base_link">
     <visual>

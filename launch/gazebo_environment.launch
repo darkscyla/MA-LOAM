@@ -1,7 +1,9 @@
 <launch>
-  <!-- Default arguments -->
+  <!-- Required Arguments -->
+  <arg name="environment" />
+
+  <!-- Default arguments for gazebo -->
   <arg name="debug" default="false" />
-  <arg name="environment" default="simple_corridor" />
   <arg name="gui" default="false" />
   <arg name="pause" default="false" />
   <arg name="world" default="$(find ma_loam)/resources/environments/$(arg environment)/$(arg environment).world" />
@@ -18,14 +20,21 @@
     <arg name="use_sim_time" value="true" />
   </include>
 
+  <!-- Sensor name and pose -->
+  <arg name="sensor_name" default="vlp_16" />
+  <arg name="sensor_pose" default="0 0 0 0 0 0 1" />
+
   <!-- Load in the sensor -->
   <arg name="gpu" default="false" />
   <arg name="organize_cloud" default="false" />
-  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find ma_loam)/resources/urdf/vlp_16.xacro' organize_cloud:=$(arg organize_cloud) gpu:=$(arg gpu)" />
-  <node pkg="gazebo_ros" type="spawn_model" name="spawn_model" args="-urdf -param /robot_description -model vlp_16" />
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find ma_loam)/resources/urdf/$(arg sensor_name).xacro' organize_cloud:=$(arg organize_cloud) gpu:=$(arg gpu)" />
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_model" args="-urdf -param /robot_description -model $(arg sensor_name)" />
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
     <param name="publish_frequency" type="double" value="10.0" />
   </node>
+
+  <!-- Set the default pose of the sensor -->
+  <node name="model_state_node" pkg="ma_loam" type="set_model_pose.py" args="--pose $(arg sensor_pose) --name $(arg sensor_name)" />
 
   <!-- Load rviz -->
   <arg name="rviz" default="true" />

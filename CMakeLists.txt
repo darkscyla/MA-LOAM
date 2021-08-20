@@ -4,7 +4,7 @@ project(ma_loam)
 add_compile_options(-Wpedantic -Wall -Wextra)
 
 set(CATKIN_PACKAGES
-    gazebo_ros)
+  gazebo_ros)
 
 find_package(catkin REQUIRED ${CATKIN_PACKAGES})
 
@@ -13,8 +13,8 @@ find_package(catkin REQUIRED ${CATKIN_PACKAGES})
 ###################################
 
 catkin_package(
-    LIBRARIES ${PROJECT_NAME}
-    CATKIN_DEPENDS ${CATKIN_PACKAGES}
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS ${CATKIN_PACKAGES}
 )
 
 ###########
@@ -27,7 +27,13 @@ catkin_package(
 
 ## Mark launch files for installation
 install(DIRECTORY launch
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+## Mark python scripts for installation
+install(PROGRAMS
+  script/*.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 #############
