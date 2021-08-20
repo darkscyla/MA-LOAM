@@ -2,12 +2,9 @@
   <!-- Default arguments -->
   <arg name="debug" default="false" />
   <arg name="environment" default="simple_corridor" />
-  <arg name="gui" default="true" />
+  <arg name="gui" default="false" />
   <arg name="pause" default="false" />
   <arg name="world" default="$(find ma_loam)/resources/environments/$(arg environment)/$(arg environment).world" />
-
-  <node name="pub_text" pkg="rostopic" type="rostopic" args="pub /msg std_msgs/String '$(arg world)'" output="screen" />
-  <node name="print_text" pkg="rostopic" type="rostopic" args="echo /msg" output="screen" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <!-- Arguments  -->
@@ -20,4 +17,18 @@
     <arg name="recording" value="false" />
     <arg name="use_sim_time" value="true" />
   </include>
+
+  <!-- Load in the sensor -->
+  <arg name="gpu" default="false" />
+  <arg name="organize_cloud" default="false" />
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find ma_loam)/resources/urdf/vlp_16.xacro' organize_cloud:=$(arg organize_cloud) gpu:=$(arg gpu)" />
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_model" args="-urdf -param /robot_description -model vlp_16" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="10.0" />
+  </node>
+
+  <!-- Load rviz -->
+  <arg name="rviz" default="true" />
+  <node if="$(arg rviz)" type="rviz" name="$(anon rviz)" pkg="rviz" respawn="false" output="screen" args="-d $(find ma_loam)/rviz/config.rviz" />
+
 </launch>

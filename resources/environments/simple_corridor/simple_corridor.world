@@ -1,5 +1,6 @@
 <sdf version="1.4">
   <world name="default">
+    <!-- GLobal Illumination -->
     <include>
       <uri>model://sun</uri>
     </include>
@@ -8,7 +9,15 @@
       <pose>0 0 0  0 0 0</pose>
       <static>true</static>
       <link name="body">
-        <visual name="visual">
+        <collision name="simple_corridor_collision">
+          <geometry>
+            <mesh>
+              <!-- We load a stl file instead as collision checks do not need non-geometric info -->
+              <uri>file://simple_corridor/simple_corridor.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="simple_corridor_visual">
           <geometry>
             <mesh>
               <uri>file://simple_corridor/simple_corridor.dae</uri>
