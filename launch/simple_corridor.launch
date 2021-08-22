@@ -1,5 +1,8 @@
 <launch>
+  <arg name="gpu" default="false" />
+
   <include file="$(find ma_loam)/launch/env_template.launch">
     <arg name="environment" value="simple_corridor" />
+    <arg name="gpu" value="$(arg gpu)" />
   </include>
 </launch>
