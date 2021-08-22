@@ -38,13 +38,13 @@ Finally, clone this like any other standard git repository
 
 ### Building and running 
 
-Clone this package in a catkin workspace and build the package using:
+Clone this package in a catkin workspace, change directory to it and build the package using:
 
 ```bash
 catkin build --this --no-deps --cmake-args  -DCMAKE_BUILD_TYPE=Release
 ```
 
-For more detail (or in case your workspace was not setup using `catkin-tools`), take a look [here](https://answers.ros.org/question/54178/how-to-build-just-one-package-using-catkin_make/). When the build finishes, simply launch environments using the provided launch files. For example:
+For more detail (or in case your workspace was not setup using `catkin-tools`), take a look [here](https://answers.ros.org/question/54178/how-to-build-just-one-package-using-catkin_make/). When the build finishes, simply launch environments using the provided launch files. For example, run any of the following:
 
 ```bash
 roslaunch ma_loam simple_corridor.launch            # Launches a light weight corridor model
