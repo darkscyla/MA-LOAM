@@ -1,5 +1,5 @@
 <launch>
-  <include file="$(find ma_loam)/launch/gazebo_environment.launch">
+  <include file="$(find ma_loam)/launch/env_template.launch">
     <arg name="environment" value="simple_corridor" />
   </include>
 </launch>

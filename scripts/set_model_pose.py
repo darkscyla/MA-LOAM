@@ -22,7 +22,7 @@ class ModelPose:
         rospy.wait_for_service(topic)
         self.set_state = rospy.ServiceProxy(topic, SetModelState)
 
-    def set_model_pose(self, name, pose):
+    def set_model_pose(self, name, pose) -> None:
         state = ModelState()
 
         # Set the model state

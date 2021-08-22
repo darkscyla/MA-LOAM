@@ -1,5 +1,5 @@
 <launch>
-  <include file="$(find ma_loam)/launch/gazebo_environment.launch">
+  <include file="$(find ma_loam)/launch/env_template.launch">
     <arg name="environment" value="skarpnack" />
     <arg name="sensor_pose" value="0 -40 2.5 0 0 0 1" />
   </include>
