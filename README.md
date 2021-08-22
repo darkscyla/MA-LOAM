@@ -36,7 +36,7 @@ git lfs install
 
 Finally, clone this like any other standard git repository
 
-### Building and running 
+### Build and run 
 
 Clone this package in a catkin workspace, change directory to it and build the package using:
 
