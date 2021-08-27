@@ -34,7 +34,13 @@
   </node>
 
   <!-- Set the default pose of the sensor -->
-  <node name="model_state_node" pkg="ma_loam" type="set_model_pose.py" args="--pose $(arg sensor_pose) --name $(arg sensor_name)" />
+  <node name="model_state_node" pkg="ma_loam" type="set_model_pose.py" args="--pose $(arg sensor_pose) --name $(arg sensor_name)" output="screen" />
+
+  <!-- Load the sensor params to ROS param server -->
+  <param name="sensor_name" type="string" value="$(arg sensor_name)" />
+  <rosparam command="load" file="$(find ma_loam)/config/config.yaml" />
+
+  <node name="sensor_tf_node" pkg="ma_loam" type="tf_sensor.py" output="screen" />
 
   <!-- Load rviz -->
   <arg name="rviz" default="true" />

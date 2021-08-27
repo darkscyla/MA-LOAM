@@ -4,7 +4,7 @@ Given a 3D model of the environment as a prior, incorporates it in SLAM calculat
 
 ## Progress
 
-- [ ] Setup a simulation environment for virtual lidar sensors
+- [x] Setup a simulation environment for virtual lidar sensors
 - [ ] Implement a variation of cluster iterative closest point
     - [ ] Selection
     - [ ] Matching
@@ -38,7 +38,7 @@ Finally, clone this like any other standard git repository
 
 ### Build and run 
 
-Clone this package in a catkin workspace, change directory to it and build the package using:
+Clone this package in a catkin workspace, change directory to it and build the package using (given that you have all the dependencies installed):
 
 ```bash
 catkin build --this --no-deps --cmake-args  -DCMAKE_BUILD_TYPE=Release

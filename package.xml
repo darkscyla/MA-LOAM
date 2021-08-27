@@ -7,7 +7,7 @@
   <author email="darkscyla@gmail.com">Muhammad Hamza Sattar</author>
   <maintainer email="darkscyla@gmail.com">Muhammad Hamza Sattar</maintainer>
 
-  <license>Mit</license>
+  <license>MIT</license>
 
   <buildtool_depend>catkin</buildtool_depend>
 
