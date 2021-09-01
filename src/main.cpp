@@ -5,6 +5,7 @@
 #include <pcl/io/pcd_io.h>
 
 // --- ROS Includes ---
+#include <ros/package.h>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -95,8 +96,8 @@ to_marker_array(
 int
 main(int argc, char **argv) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::io::loadPCDFile("/home/scyla/catkin_ws/src/MA-LOAM/resources/pcls/"
-                       "simple_corridor_sample.pcd",
+  pcl::io::loadPCDFile(ros::package::getPath("ma_loam") +
+                           "/resources/pcls/simple_corridor_sample.pcd",
                        *cloud);
 
   ma_loam::cluster_icp cicp;
