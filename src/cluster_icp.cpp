@@ -41,20 +41,6 @@ cluster_icp::voxelize(float _resolution) const {
   voxel_grid->addPointsFromInputCloud();
 
   return voxel_grid;
-
-  // for (auto it = tree.leaf_depth_begin(), it_end = tree.leaf_depth_end();
-  //      it != it_end; ++it, ++idx) {
-  //   // Get the indices of the points in the voxel
-  //   auto &container = it.getLeafContainer();
-  //   const auto &indices = container.getPointIndicesVector();
-
-  //   std::cout << "Voxel[" << idx << "]: "
-  //             << "( ";
-  //   for (const auto index : indices) {
-  //     std::cout << index << " ";
-  //   }
-  //   std::cout << ")\n";
-  // }
 }
 
 } // namespace ma_loam
