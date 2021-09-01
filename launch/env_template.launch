@@ -40,6 +40,7 @@
   <param name="sensor_name" type="string" value="$(arg sensor_name)" />
   <rosparam command="load" file="$(find ma_loam)/config/config.yaml" />
 
+  <!-- Load the sensor TF publisher -->
   <node name="sensor_tf_node" pkg="ma_loam" type="tf_sensor.py" output="screen" />
 
   <!-- Load rviz -->
