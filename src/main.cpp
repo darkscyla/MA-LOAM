@@ -5,6 +5,8 @@
 #include <pcl/io/pcd_io.h>
 
 // --- ROS Includes ---
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
 #include <ros/package.h>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
@@ -95,27 +97,79 @@ to_marker_array(
 
 int
 main(int argc, char **argv) {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  // Parameters
+  const size_t normals_neighbors = 10; ///> neighbors to search for normals
+  const float voxel_size = 0.1;        ///> in meters (point cloud units)
+  const size_t clusters = 3;           ///> Max features per voxel to retain
+  const size_t elem_cluster = 2;       ///> Min elements for cluster to be valid
+  const float eps_cluster = 0.25;      ///> Difference to tolerate for merging
+                                  ///> This distance d can be converted to angle
+                                  ///> using theta = 2 * asin( d / 2)
+
+  const float scale = 0.05f; ///> Visualization scale for normals in rviz
+
+  // Actual implementation
+  using cloud_t = pcl::PointCloud<pcl::PointXYZ>;
+  cloud_t::Ptr cloud(new cloud_t);
   pcl::io::loadPCDFile(ros::package::getPath("ma_loam") +
                            "/resources/pcls/simple_corridor_sample.pcd",
                        *cloud);
+  cloud->header.frame_id = "map";
 
   ma_loam::cluster_icp cicp;
   cicp.set_input_cloud(cloud);
 
   // Compute normals in another thead while voxelizing the point cloud, normals
   // might potentially take time to compute
-  auto normal_future = std::async(
-      std::launch::async, &ma_loam::cluster_icp::estimate_normals, cicp, 10);
-  auto voxel_future = std::async(std::launch::async,
-                                 &ma_loam::cluster_icp::voxelize, cicp, 0.1);
+  auto normal_future =
+      std::async(std::launch::async, &ma_loam::cluster_icp::estimate_normals,
+                 cicp, normals_neighbors);
+  auto voxel_future = std::async(
+      std::launch::async, &ma_loam::cluster_icp::voxelize, cicp, voxel_size);
 
   const auto cloud_normals = normal_future.get();
   const auto voxel_grid = voxel_future.get();
 
+  // Go over the voxel grid and try to prune them using k means clustering
+  cloud_t::Ptr pruned_cloud(new cloud_t);
+  pruned_cloud->header.frame_id = cloud->header.frame_id;
+
+  for (auto itt = voxel_grid->leaf_depth_begin(),
+            itt_end = voxel_grid->leaf_depth_end();
+       itt != itt_end; ++itt) {
+    const auto &indicies = itt.getLeafContainer().getPointIndicesVector();
+
+    // 4 below represents 4 dimensions for clustering namely x, y, z and
+    // curvature
+    ma_loam::kmeans_optimizer optimizer(indicies.size(), 4);
+
+    // Copy over the data
+    std::vector<float> pt_data;
+    for (const auto idx : indicies) {
+      const auto &pt = cloud_normals->points[idx];
+      pt_data = {pt.normal_x, pt.normal_y, pt.normal_z, pt.curvature};
+      optimizer.addDataPoint(pt_data);
+    }
+
+    // Optimize the points
+    const auto cluster_indices =
+        optimizer.optimize(clusters, elem_cluster, eps_cluster);
+
+    // Add the optimized points to the pruned point cloud by taking their
+    // geometric mean
+    for (const auto &opt_indices : cluster_indices) {
+      Eigen::Vector3f center = Eigen::Vector3f::Zero();
+      for (const auto local_idx : opt_indices) {
+        const auto global_idx = indicies[local_idx];
+        center += cloud->points[global_idx].getVector3fMap();
+      }
+      center /= opt_indices.size();
+      pruned_cloud->push_back({center.x(), center.y(), center.z()});
+    }
+  }
+
   // Publish to ROS
   {
-    const float scale = 0.1f;
     const auto normals_markers =
         to_marker_array(cloud, cloud_normals, voxel_grid, scale);
 
@@ -123,12 +177,17 @@ main(int argc, char **argv) {
     ros::init(argc, argv, "normals_publisher_node");
 
     ros::NodeHandle nh;
-    ros::Publisher pub =
+    ros::Publisher normal_pub =
         nh.advertise<visualization_msgs::MarkerArray>("surface_normals", 1);
+    ros::Publisher original_pub = nh.advertise<cloud_t>("original_pcl", 1);
+    ros::Publisher pruned_pub = nh.advertise<cloud_t>("pruned_pcl", 1);
+
     ros::Rate rate(1);
 
     while (ros::ok()) {
-      pub.publish(normals_markers);
+      normal_pub.publish(normals_markers);
+      original_pub.publish(cloud);
+      pruned_pub.publish(pruned_cloud);
       rate.sleep();
     }
   }

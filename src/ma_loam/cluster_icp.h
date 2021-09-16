@@ -1,4 +1,5 @@
 // --- PCL Includes ---
+#include <pcl/ml/kmeans.h>
 #include <pcl/octree/octree.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -54,6 +55,64 @@ public:
 
 private:
   cloud_ptr_t cloud_;
+};
+
+class kmeans_optimizer : public pcl::Kmeans {
+public:
+  // Inherit all base class constructors
+  using Kmeans::Kmeans;
+
+  /**
+   * @brief Optimizes the number of clusters that maximizes the cohesion and
+   * separation using the silhouette method. If only 2 clusters are found (which
+   * is the minimun), they are merged if they are close enough to eachother
+   * based on the given epsilon value
+   *
+   * @param _max_clusters Maximum number of clusters to try for optimal
+   * silhouette
+   * @param _min_cluster_elements Minimum number of elements a cluster must have
+   * in order to be considered as a valid cluster
+   * @param _eps Distance below which clusters are merged i.e. they are close
+   * together
+   * @return ClustersToPoints The optimized clusters created using k-means and
+   * silhouette method. Each cluster is associated with a list of point ids
+   */
+  ClustersToPoints
+  optimize(size_t _max_clusters, size_t _min_cluster_elements, float _eps);
+
+private:
+  /**
+   * @brief Computes the distance matrix for all the current points in the data
+   */
+  void
+  compute_distance_matrix();
+
+  /**
+   * @brief Computes the silhouette coefficient from the internal k means
+   * clustering
+   *
+   * @return float The value of silhouette coefficient
+   */
+  float
+  compute_silhouette_coefficient() const;
+
+  /**
+   * @brief Clears the internal state so we can run the k-means again
+   *
+   */
+  void
+  clear() {
+    clusters_to_points_.clear();
+    points_to_clusters_.clear();
+    centroids_.clear();
+  }
+
+  // Disallow cluster size to be set externally
+  using Kmeans::setClusterSize;
+  using d_matrix_t = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
+
+  // Distance matrix
+  d_matrix_t distance_matrix_;
 };
 
 } // namespace ma_loam
