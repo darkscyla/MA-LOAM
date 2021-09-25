@@ -4,6 +4,15 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+// --- CGAL Includes ---
+#include <CGAL/AABB_traits.h>
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_triangle_primitive.h>
+#include <CGAL/Simple_cartesian.h>
+
+// --- Standard Includes ---
+#include <vector>
+
 namespace ma_loam {
 
 class cluster_icp {
@@ -113,6 +122,51 @@ private:
 
   // Distance matrix
   d_matrix_t distance_matrix_;
+};
+
+class aabb_tree_mesh {
+public:
+  // Type defs for CGAL ( lots of them :) )
+  using coord_t = CGAL::Simple_cartesian<double>;
+
+  using scalar_t = coord_t::FT;
+  using point_t = coord_t::Point_3;
+  using triangle_t = coord_t::Triangle_3;
+  using triangles_t = std::vector<triangle_t>;
+  using iterator_t = std::vector<triangle_t>::iterator;
+  using primitive_t = CGAL::AABB_triangle_primitive<coord_t, iterator_t>;
+  using aabb_triangle_traits_t = CGAL::AABB_traits<coord_t, primitive_t>;
+  using tree_t = CGAL::AABB_tree<aabb_triangle_traits_t>;
+
+  /**
+   * @brief Loads in a stl file and creates an axis aligned bounding box (AABB)
+   * tree for fast closest point to a triangular mesh queries. To furthur
+   * accelerate this, we construct a KD-tree under the hood. It is assumed that
+   * the stl file contains just a plain triangular mesh
+   *
+   * @param _stl_file_path Path of the stl file
+   */
+  aabb_tree_mesh(const std::string &_stl_file_path);
+
+  const tree_t &
+  tree() const {
+    return tree_;
+  }
+
+private:
+  /**
+   * @brief Loads in a stl file and creates a vector of triangles representing
+   * the underlying mesh
+   *
+   * @param _stl_file_path Path of the stl fle
+   * @return triangles_t A vector of triangles representing the
+   * underlying geometry of the stl file
+   */
+  static triangles_t
+  load_stl_file(const std::string &_stl_file_path);
+
+  triangles_t triangles_;
+  tree_t tree_;
 };
 
 } // namespace ma_loam

@@ -5,7 +5,12 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/normal_3d_omp.h>
 
+// --- CGAL Includes ---
+#include <CGAL/IO/STL_reader.h>
+
 // --- Standard Includes ---
+#include <fstream>
+#include <iostream>
 #include <limits>
 
 namespace ma_loam {
@@ -199,6 +204,41 @@ kmeans_optimizer::optimize(size_t _max_clusters, size_t _min_cluster_elements,
   }
 
   return best_cluster;
+}
+
+aabb_tree_mesh::aabb_tree_mesh(const std::string &_stl_file_path)
+    : triangles_(load_stl_file(_stl_file_path)),
+      tree_(triangles_.begin(), triangles_.end()) {
+  // Create the internal KD tree to accelerate nearest point queries
+  tree_.accelerate_distance_queries();
+}
+
+aabb_tree_mesh::triangles_t
+aabb_tree_mesh::load_stl_file(const std::string &_stl_file_path) {
+  std::vector<point_t> vertices;
+  std::vector<std::array<size_t, 3>> face_indices;
+
+  // Loads in the file. Use RAII paradigm
+  {
+    std::ifstream stl_file(_stl_file_path, std::ifstream::in);
+    const auto success = CGAL::read_STL(stl_file, vertices, face_indices);
+
+    if (!success) {
+      std::cerr << "ERROR: Unable to open file at " << _stl_file_path << "\n";
+      return {};
+    }
+  }
+
+  // Create AABB tree compatible triangles
+  triangles_t triangles;
+  triangles.reserve(face_indices.size());
+
+  for (const auto &indices : face_indices) {
+    triangles.push_back(
+        {vertices[indices[0]], vertices[indices[1]], vertices[indices[2]]});
+  }
+
+  return triangles;
 }
 
 } // namespace ma_loam

@@ -9,6 +9,7 @@ set(CATKIN_PACKAGES
   pcl_ros)
 
 find_package(catkin REQUIRED ${CATKIN_PACKAGES})
+find_package(CGAL REQUIRED)
 find_package(PCL REQUIRED)
 
 ###################################
@@ -29,9 +30,11 @@ add_library(${PROJECT_NAME}
   src/cluster_icp.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC 
   src
+  ${CGAL_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} 
   ${catkin_LIBRARIES}
+  ${CGAL_LIBRARIES}
   ${PCL_LIBRARIES})
 
 add_executable(${PROJECT_NAME}_runner src/main.cpp)
