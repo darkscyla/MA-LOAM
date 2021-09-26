@@ -239,20 +239,17 @@ public:
     Eigen::Matrix<T, 3, 1> curr_pt{as_T(point_.x), as_T(point_.y),
                                    as_T(point_.z)};
 
-    // Create quaternion and translation
-    Eigen::Quaternion<T> quaternion{
-        _quaternion[3],
-        _quaternion[0],
-        _quaternion[1],
-        _quaternion[2],
-    }; ///> Eigen uses wxyz instead of xyzw
-    Eigen::Matrix<T, 3, 1> translation{_translation[0], _translation[1],
-                                       _translation[2]};
+    // Map the quaternion and translation to Eigen types
+    const Eigen::Quaternion<T> quaternion =
+        Eigen::Map<const Eigen::Quaternion<T>>(_quaternion);
+    const Eigen::Matrix<T, 3, 1> translation =
+        Eigen::Map<const Eigen::Matrix<T, 3, 1>>(_translation);
+
     // Apply the rotation and translation
     curr_pt = quaternion * curr_pt + translation;
 
     // Now, we find the closet point on the mesh. If within threshold, we
-    // considered it active otherwise we set 0 cost
+    // consider it active otherwise we set 0 cost
     aabb_tree_mesh::point_3_t mesh_pt;
     if (mesh_.closest_point(
             conversions::to_point_3(curr_pt.x(), curr_pt.y(), curr_pt.z()),

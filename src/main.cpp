@@ -192,6 +192,10 @@ main(int argc, char **argv) {
                              nullptr, quaternion, translation);
   }
 
+  // Add parametrization for quaternion as all 4 components are not independent
+  problem.SetParameterization(quaternion,
+                              new ceres::EigenQuaternionParameterization());
+
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_progress_to_stdout = true;
