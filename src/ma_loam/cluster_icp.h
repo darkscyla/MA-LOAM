@@ -10,10 +10,18 @@
 #include <CGAL/AABB_triangle_primitive.h>
 #include <CGAL/Simple_cartesian.h>
 
+// --- Ceres Includes ---
+#include <ceres/ceres.h>
+
+// --- Eigen Includes ---
+#include <Eigen/Core>
+
 // --- Standard Includes ---
 #include <vector>
 
 namespace ma_loam {
+
+#define as_T(x) static_cast<T>(x)
 
 class cluster_icp {
 public:
@@ -127,10 +135,10 @@ private:
 class aabb_tree_mesh {
 public:
   // Type defs for CGAL ( lots of them :) )
-  using coord_t = CGAL::Simple_cartesian<double>;
+  using coord_t = CGAL::Simple_cartesian<double>; ///> Double faster than float
 
   using scalar_t = coord_t::FT;
-  using point_t = coord_t::Point_3;
+  using point_3_t = coord_t::Point_3;
   using triangle_t = coord_t::Triangle_3;
   using triangles_t = std::vector<triangle_t>;
   using iterator_t = std::vector<triangle_t>::iterator;
@@ -148,9 +156,26 @@ public:
    */
   aabb_tree_mesh(const std::string &_stl_file_path);
 
-  const tree_t &
-  tree() const {
-    return tree_;
+  void
+  set_distance_threshold(const scalar_t _threshold) {
+    dist_threshold_sqr_ = _threshold * _threshold;
+  }
+
+  /**
+   * @brief
+   *
+   * @param[in] _query_pt Point for which closest point on mesh is required
+   * @param[out] _closest_pt The closest point on mesh from query point
+   * @return true If the distance between query and closest point is less than
+   * or equal to the threshold
+   * @return false If distance is greater than threshold
+   */
+  bool
+  closest_point(const point_3_t &_query_pt, point_3_t &_closest_pt) const {
+    _closest_pt = tree_.closest_point(_query_pt);
+    return (_closest_pt - _query_pt).squared_length() <= dist_threshold_sqr_
+               ? true
+               : false;
   }
 
 private:
@@ -165,8 +190,103 @@ private:
   static triangles_t
   load_stl_file(const std::string &_stl_file_path);
 
-  triangles_t triangles_;
-  tree_t tree_;
+  triangles_t triangles_;       ///> Underlying triangles representing the mesh
+  tree_t tree_;                 ///> AABB tree with embedded kd tree
+  scalar_t dist_threshold_sqr_; ///> Rejection distance
+};
+
+namespace conversions {
+
+template <typename T>
+aabb_tree_mesh::point_3_t
+to_point_3(const T &_x, const T &_y, const T &_z) {
+  return {_x, _y, _z};
+}
+
+// In case of jets, we only care about the real part
+template <typename T, int N>
+aabb_tree_mesh::point_3_t
+to_point_3(const ceres::Jet<T, N> &_x, const ceres::Jet<T, N> &_y,
+           const ceres::Jet<T, N> &_z) {
+  return {_x.a, _y.a, _z.a};
+}
+
+} // namespace conversions
+
+class point_to_mesh_cost {
+public:
+  using point_t = cluster_icp::point_t;
+
+  /**
+   * @brief Construct the point to mesh distance cost function. The underlying
+   * AABB tree and point must remain valid till the end of the optimization as
+   * we just store the references to both
+   *
+   * @param _mesh Reference to the AABB tree for fast point to point on mesh
+   * computation
+   * @param _point Reference to the un-aligned point to match to the mesh
+   */
+  point_to_mesh_cost(const aabb_tree_mesh &_mesh, const point_t &_point)
+      : mesh_(_mesh), point_(_point) {}
+
+  template <typename T>
+  bool
+  operator()(const T *const _quaternion, const T *const _translation,
+             T *_residual) const {
+    // Cast the underlying point to type T (which is either double if just
+    // function evaluation is required or it is ceres::Jet if derivative is also
+    // required)
+    Eigen::Matrix<T, 3, 1> curr_pt{as_T(point_.x), as_T(point_.y),
+                                   as_T(point_.z)};
+
+    // Create quaternion and translation
+    Eigen::Quaternion<T> quaternion{
+        _quaternion[3],
+        _quaternion[0],
+        _quaternion[1],
+        _quaternion[2],
+    }; ///> Eigen uses wxyz instead of xyzw
+    Eigen::Matrix<T, 3, 1> translation{_translation[0], _translation[1],
+                                       _translation[2]};
+    // Apply the rotation and translation
+    curr_pt = quaternion * curr_pt + translation;
+
+    // Now, we find the closet point on the mesh. If within threshold, we
+    // considered it active otherwise we set 0 cost
+    aabb_tree_mesh::point_3_t mesh_pt;
+    if (mesh_.closest_point(
+            conversions::to_point_3(curr_pt.x(), curr_pt.y(), curr_pt.z()),
+            mesh_pt)) {
+      _residual[0] = curr_pt.x() - mesh_pt.x();
+      _residual[1] = curr_pt.y() - mesh_pt.y();
+      _residual[2] = curr_pt.z() - mesh_pt.z();
+    } else {
+      _residual[0] = as_T(0);
+      _residual[1] = as_T(0);
+      _residual[2] = as_T(0);
+    }
+
+    return true;
+  }
+
+  /**
+   * @brief Factory method to create the appropriate cost function
+   *
+   * @param _mesh Reference to the AABB tree for fast point to point on mesh
+   * computation
+   * @param _point Reference to the un-aligned point to match to the mesh
+   * @return ceres::CostFunction* Pointer to ceres cost function. Ceres will
+   * take ownership of the cost function so there is no need to free it manually
+   */
+  static ceres::CostFunction *
+  create(const aabb_tree_mesh &_mesh, const point_t &_point) {
+    return new ceres::AutoDiffCostFunction<point_to_mesh_cost, 3, 4, 3>(
+        new point_to_mesh_cost(_mesh, _point));
+  }
+
+private:
+  const aabb_tree_mesh &mesh_; ///> Store a referece to the aabb tree
+  const point_t &point_;       ///> Store a reference to the point cloud point
 };
 
 } // namespace ma_loam

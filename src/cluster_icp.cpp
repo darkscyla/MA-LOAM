@@ -208,14 +208,15 @@ kmeans_optimizer::optimize(size_t _max_clusters, size_t _min_cluster_elements,
 
 aabb_tree_mesh::aabb_tree_mesh(const std::string &_stl_file_path)
     : triangles_(load_stl_file(_stl_file_path)),
-      tree_(triangles_.begin(), triangles_.end()) {
+      tree_(triangles_.begin(), triangles_.end()),
+      dist_threshold_sqr_(std::numeric_limits<scalar_t>::infinity()) {
   // Create the internal KD tree to accelerate nearest point queries
   tree_.accelerate_distance_queries();
 }
 
 aabb_tree_mesh::triangles_t
 aabb_tree_mesh::load_stl_file(const std::string &_stl_file_path) {
-  std::vector<point_t> vertices;
+  std::vector<point_3_t> vertices;
   std::vector<std::array<size_t, 3>> face_indices;
 
   // Loads in the file. Use RAII paradigm

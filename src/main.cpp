@@ -168,6 +168,49 @@ main(int argc, char **argv) {
     }
   }
 
+  // Load in the environemnt model
+  ma_loam::aabb_tree_mesh mesh(
+      ros::package::getPath("ma_loam") +
+      "/resources/environments/simple_corridor/simple_corridor.stl");
+
+  // Setup the initial configuration
+  const double translation_init[3] = {0, 0, 0}; ///> xyz
+  double translation[3];
+  std::copy(std::begin(translation_init), std::end(translation_init),
+            std::begin(translation));
+
+  const double quaternion_init[4] = {0, 0, 0, 1}; ///> xyzw
+  double quaternion[4];
+  std::copy(std::begin(quaternion_init), std::end(quaternion_init),
+            std::begin(quaternion));
+
+  ceres::Problem problem;
+
+  // Add the point to point on mesh cost
+  for (const auto &point : pruned_cloud->points) {
+    problem.AddResidualBlock(ma_loam::point_to_mesh_cost::create(mesh, point),
+                             nullptr, quaternion, translation);
+  }
+
+  ceres::Solver::Options options;
+  options.linear_solver_type = ceres::DENSE_QR;
+  options.minimizer_progress_to_stdout = true;
+  options.max_num_iterations = 100;
+
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+
+  std::cout << summary.BriefReport() << "\n";
+  std::cout << "Initial translation: " << translation_init[0] << " "
+            << translation_init[1] << " " << translation_init[2] << "\n";
+  std::cout << "Final translation: " << translation[0] << " " << translation[1]
+            << " " << translation[2] << "\n";
+  std::cout << "Initial quaternion: " << quaternion_init[0] << " "
+            << quaternion_init[1] << " " << quaternion_init[2] << " "
+            << quaternion_init[3] << "\n";
+  std::cout << "Final quaternion: " << quaternion[0] << " " << quaternion[1]
+            << " " << quaternion[2] << " " << quaternion[3] << "\n";
+
   // Publish to ROS
   {
     const auto normals_markers =

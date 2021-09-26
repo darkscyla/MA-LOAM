@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(ma_loam)
 
-add_compile_options(-Wpedantic -Wall -Wextra)
+add_compile_options(-Wpedantic -Wall -Wextra -O3)
 
 set(CATKIN_PACKAGES
   gazebo_ros
@@ -9,6 +9,7 @@ set(CATKIN_PACKAGES
   pcl_ros)
 
 find_package(catkin REQUIRED ${CATKIN_PACKAGES})
+find_package(Ceres REQUIRED)
 find_package(CGAL REQUIRED)
 find_package(PCL REQUIRED)
 
@@ -30,16 +31,26 @@ add_library(${PROJECT_NAME}
   src/cluster_icp.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC 
   src
+  ${CERES_INCLUDE_DIRS}
   ${CGAL_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} 
   ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
   ${CGAL_LIBRARIES}
   ${PCL_LIBRARIES})
 
 add_executable(${PROJECT_NAME}_runner src/main.cpp)
-target_include_directories(${PROJECT_NAME}_runner PUBLIC src ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${pcl_ros_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}_runner ${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${pcl_ros_LIBRARIES})
+target_include_directories(${PROJECT_NAME}_runner PUBLIC src 
+  ${catkin_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${pcl_ros_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME}_runner ${PROJECT_NAME} 
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${pcl_ros_LIBRARIES})
 
 #############
 ## Install ##
