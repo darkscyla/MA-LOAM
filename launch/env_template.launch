@@ -33,8 +33,8 @@
     <param name="publish_frequency" type="double" value="10.0" />
   </node>
 
-  <!-- Set the default pose of the sensor -->
-  <node name="model_state_node" pkg="ma_loam" type="set_model_pose.py" args="--pose $(arg sensor_pose) --name $(arg sensor_name)" output="screen" />
+  <!-- Set the default pose of the sensor at the start of the simulation. Publish to /cmd_vel later for complete twist -->
+  <node name="model_state_node" pkg="ma_loam" type="set_model_twist.py" args="--pose $(arg sensor_pose) --name $(arg sensor_name)" output="screen" />
 
   <!-- Load the sensor params to ROS param server -->
   <param name="sensor_name" type="string" value="$(arg sensor_name)" />

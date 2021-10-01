@@ -3,7 +3,8 @@
 # --- ROS Imports ---
 import rospy
 import tf
-from gazebo_msgs.msg import ModelState
+from geometry_msgs.msg import Pose, Twist
+from gazebo_msgs.msg import ModelState, ModelStates
 from gazebo_msgs.srv import SetModelState, SetModelStateResponse
 
 # --- Standard Imports ---
@@ -16,18 +17,28 @@ def ros_success(msg):
 
 
 class ModelPose:
-    def __init__(self) -> None:
+    def __init__(self, name) -> None:
         # Setup the model state service
         topic = "/gazebo/set_model_state"
         rospy.wait_for_service(topic)
         self.set_state = rospy.ServiceProxy(topic, SetModelState)
 
-    def set_model_pose(self, name, pose) -> None:
+        self.sensor_name = name
+        self.global_frame = "world"
+
+        # Setup the common model state
+        self.state = ModelState()
+        self.state.model_name = self.sensor_name
+        self.state.reference_frame = self.global_frame
+
+        self.last_pose = None
+
+    def set_model_pose(self, pose) -> None:
         state = ModelState()
 
         # Set the model state
-        state.model_name = name
-        state.reference_frame = "world"
+        state.model_name = self.state.model_name
+        state.reference_frame = self.state.reference_frame
 
         state.pose.position.x = pose[0]
         state.pose.position.y = pose[1]
@@ -48,7 +59,28 @@ class ModelPose:
             success = response.success
             rate.sleep()
 
-        ros_success(f"Pose successfully set for: {name}")
+        ros_success(f"Pose successfully set for: {self.sensor_name}")
+
+    def listen(self) -> None:
+        rospy.sleep(1)
+
+        self.state_sub = rospy.Subscriber(
+            "/gazebo/model_states", ModelStates, self.state_cb, queue_size=1
+        )
+        self.twist_sub = rospy.Subscriber("/cmd_vel", Twist, self.vel_cb, queue_size=1)
+
+    def state_cb(self, states: ModelStates):
+        # Get index of sensor and save the pose of the sensor
+        idx = states.name.index(self.sensor_name)
+        self.last_pose: Pose = states.pose[idx]
+
+    def vel_cb(self, twist: Twist) -> None:
+        if not self.last_pose is None:
+            # Set state and publish
+            self.state.pose = self.last_pose
+            self.state.twist = twist
+            self.state
+            self.set_state(self.state)
 
 
 def parse_arguments() -> Dict[str, str]:
@@ -94,7 +126,11 @@ if __name__ == "__main__":
     rospy.init_node("model_state_node")
 
     if pose:
-        model_pose = ModelPose()
-        model_pose.set_model_pose(args["name"], pose)
+        model_pose = ModelPose(args["name"])
+        model_pose.set_model_pose(pose)
     else:
         rospy.logerr(f"Invalid pose format: {args['pose']}")
+
+    # Allows update through cmd vel topic
+    model_pose.listen()
+    rospy.spin()
