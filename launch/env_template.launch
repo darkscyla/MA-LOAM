@@ -22,7 +22,8 @@
 
   <!-- Sensor name and pose -->
   <arg name="sensor_name" default="vlp_16" />
-  <arg name="sensor_pose" default="0 0 0 0 0 0 1" />
+  <arg name="sensor_pose" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]" />
+  <rosparam param="sensor_pose_init" subst_value="True">$(arg sensor_pose)</rosparam>
 
   <!-- Load in the sensor -->
   <arg name="gpu" default="false" />
@@ -34,7 +35,7 @@
   </node>
 
   <!-- Set the default pose of the sensor at the start of the simulation. Publish to /cmd_vel later for complete twist -->
-  <node name="model_state_node" pkg="ma_loam" type="set_model_twist.py" args="--pose $(arg sensor_pose) --name $(arg sensor_name)" output="screen" />
+  <node name="model_state_node" pkg="ma_loam" type="set_model_state.py" args="--name $(arg sensor_name)" output="screen" />
 
   <!-- Load the sensor params to ROS param server -->
   <param name="sensor_name" type="string" value="$(arg sensor_name)" />
@@ -46,5 +47,8 @@
   <!-- Load rviz -->
   <arg name="rviz" default="true" />
   <node if="$(arg rviz)" type="rviz" name="$(anon rviz)" pkg="rviz" respawn="false" output="screen" args="-d $(find ma_loam)/rviz/config.rviz" />
+
+  <!-- Publish transform between world and camera init(part of a-loam) -->
+  <node pkg="tf" type="static_transform_publisher" name="sensor" args="0 0 0 0 0 0 1 /world /camera_init  100" />
 
 </launch>

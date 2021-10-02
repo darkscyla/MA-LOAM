@@ -9,6 +9,7 @@ from gazebo_msgs.srv import SetModelState, SetModelStateResponse
 
 # --- Standard Imports ---
 import argparse
+import threading
 from typing import Dict, List, Union
 
 
@@ -16,7 +17,7 @@ def ros_success(msg):
     rospy.loginfo("\x1b[6;30;42m" + msg + "\x1b[0m")
 
 
-class ModelPose:
+class ModelStateSetter:
     def __init__(self, name) -> None:
         # Setup the model state service
         topic = "/gazebo/set_model_state"
@@ -32,6 +33,13 @@ class ModelPose:
         self.state.reference_frame = self.global_frame
 
         self.last_pose = None
+        self.cv = threading.Condition()
+        self.available = False
+
+        # Spawn subscriber to monitor model states
+        self.state_sub = rospy.Subscriber(
+            "/gazebo/model_states", ModelStates, self.state_cb, queue_size=1
+        )
 
     def set_model_pose(self, pose) -> None:
         state = ModelState()
@@ -49,30 +57,32 @@ class ModelPose:
         state.pose.orientation.z = pose[5]
         state.pose.orientation.w = pose[6]
 
-        # Retry every second to update the position of the model
-        # Gazebo might take time to load everything
-        rate = rospy.Rate(1)
-        success = False
+        # Wait until model with sensor name is available in gazebo
+        if not self.available:
+            with self.cv:
+                self.cv.wait()
 
-        while not success:
-            response: SetModelStateResponse = self.set_state(state)
-            success = response.success
-            rate.sleep()
-
-        ros_success(f"Pose successfully set for: {self.sensor_name}")
+        response: SetModelStateResponse = self.set_state(state)
+        ros_success(
+            f"Pose set for: {self.sensor_name} with success: {response.success}"
+        )
 
     def listen(self) -> None:
-        rospy.sleep(1)
-
-        self.state_sub = rospy.Subscriber(
-            "/gazebo/model_states", ModelStates, self.state_cb, queue_size=1
-        )
         self.twist_sub = rospy.Subscriber("/cmd_vel", Twist, self.vel_cb, queue_size=1)
 
     def state_cb(self, states: ModelStates):
-        # Get index of sensor and save the pose of the sensor
-        idx = states.name.index(self.sensor_name)
-        self.last_pose: Pose = states.pose[idx]
+        if not self.available:
+            if self.sensor_name in states.name:
+                self.available = True
+
+                with self.cv:
+                    self.cv.notify()
+                # Some grace time to make sure pose is set
+                rospy.sleep(1)
+        else:
+            # Get index of sensor and save the pose of the sensor
+            idx = states.name.index(self.sensor_name)
+            self.last_pose: Pose = states.pose[idx]
 
     def vel_cb(self, twist: Twist) -> None:
         if not self.last_pose is None:
@@ -83,7 +93,7 @@ class ModelPose:
             self.set_state(self.state)
 
 
-def parse_arguments() -> Dict[str, str]:
+def parse_name() -> Dict[str, str]:
     parser = argparse.ArgumentParser(description="Sets the pose of the model")
     parser.add_argument(
         "-n",
@@ -92,20 +102,14 @@ def parse_arguments() -> Dict[str, str]:
         help="Name of the model whose pose should be set",
         required=True,
     )
-    parser.add_argument(
-        "-p",
-        "--pose",
-        nargs="+",
-        type=float,
-        help="Pose of the model with translation followed by orientation"
-        ' --> "x y z r p y" or "x y z x y z w"',
-        required=True,
-    )
     args, _ = parser.parse_known_args()
-    return vars(args)
+    return vars(args)["name"]
 
 
-def parse_pose(pose: str) -> Union[List[float], None]:
+def parse_pose(pose: List[float]) -> Union[List[float], None]:
+    if not isinstance(pose, list):
+        return None
+
     # Case of x y z r p y, we need to convert rpy to quaternion
     if len(pose) == 6:
         return pose[:3] + list(
@@ -119,17 +123,19 @@ def parse_pose(pose: str) -> Union[List[float], None]:
 
 
 if __name__ == "__main__":
-    # Fetch command line arguments
-    args = parse_arguments()
-    pose = parse_pose(args["pose"])
-
     rospy.init_node("model_state_node")
 
-    if pose:
-        model_pose = ModelPose(args["name"])
-        model_pose.set_model_pose(pose)
+    # Fetch sensor info
+    sensor_name = parse_name()
+
+    raw_pose = rospy.get_param("sensor_pose_init", [])
+    sensor_pose = parse_pose(raw_pose)
+
+    if sensor_pose:
+        model_pose = ModelStateSetter(sensor_name)
+        model_pose.set_model_pose(sensor_pose)
     else:
-        rospy.logerr(f"Invalid pose format: {args['pose']}")
+        rospy.logerr(f"Invalid pose format: {raw_pose}")
 
     # Allows update through cmd vel topic
     model_pose.listen()
