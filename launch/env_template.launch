@@ -2,6 +2,9 @@
   <!-- Required Arguments -->
   <arg name="environment" />
 
+  <!-- Load in the config -->
+  <rosparam command="load" file="$(find ma_loam)/config/config.yaml" />
+
   <!-- Default arguments for gazebo -->
   <arg name="debug" default="false" />
   <arg name="gui" default="false" />
@@ -40,7 +43,6 @@
 
   <!-- Load the sensor params to ROS param server -->
   <param name="sensor_name" type="string" value="$(arg sensor_name)" />
-  <rosparam command="load" file="$(find ma_loam)/config/config.yaml" />
 
   <!-- Load the sensor TF publisher -->
   <node name="sensor_tf_node" pkg="ma_loam" type="tf_sensor.py" output="screen" />
@@ -51,5 +53,8 @@
 
   <!-- Publish transform between world and camera init(part of a-loam) -->
   <node pkg="tf" type="static_transform_publisher" name="sensor" args="0 0 0 0 0 0 1 /world /camera_init  100" />
+
+  <!-- Load the CICP node -->
+  <node name="cluster_icp_node" pkg="ma_loam" type="ma_loam_runner" output="screen" />
 
 </launch>
