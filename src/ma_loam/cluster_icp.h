@@ -33,6 +33,7 @@ public:
   using cloud_normal_t = pcl::PointCloud<normal_t>;
 
   using cloud_ptr_t = cloud_t::Ptr;
+  using cloud_ptr_const_t = cloud_t::ConstPtr;
   using cloud_normal_ptr_t = cloud_normal_t::Ptr;
 
   using voxel_grid_t = pcl::octree::OctreePointCloudPointVector<point_t>;
@@ -46,7 +47,7 @@ public:
    * @param _cloud_ptr Shared pointer to the point cloud
    */
   void
-  set_input_cloud(cloud_ptr_t _cloud_ptr);
+  set_input_cloud(cloud_ptr_const_t _cloud_ptr);
 
   /**
    * @brief Estimates the normals of each point in the cloud using the given
@@ -71,7 +72,7 @@ public:
   voxelize(float _resolution) const;
 
 private:
-  cloud_ptr_t cloud_;
+  cloud_ptr_const_t cloud_;
 };
 
 class kmeans_optimizer : public pcl::Kmeans {
@@ -156,9 +157,26 @@ public:
    */
   aabb_tree_mesh(const std::string &_stl_file_path);
 
+  /**
+   * @brief Set the distance threshold above which closest point query returns
+   * false. The closest point is still updated in place
+   *
+   * @param _threshold New value of threshold to set
+   */
   void
   set_distance_threshold(const scalar_t _threshold) {
     dist_threshold_sqr_ = _threshold * _threshold;
+  }
+
+  /**
+   * @brief Checks if the underlying mesh is empty
+   * 
+   * @return true If the mesh is empty
+   * @return false If the mesh contains data
+   */
+  bool
+  empty() const {
+    return triangles_.empty();
   }
 
   /**

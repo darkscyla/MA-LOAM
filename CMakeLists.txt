@@ -28,9 +28,11 @@ catkin_package(
 ###########
 
 add_library(${PROJECT_NAME}
-  src/cluster_icp.cpp)
+  src/cluster_icp.cpp
+  src/cluster_icp_ros.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC 
   src
+  ${catkin_INCLUDE_DIRS}
   ${CERES_INCLUDE_DIRS}
   ${CGAL_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})

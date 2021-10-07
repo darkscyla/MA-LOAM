@@ -22,7 +22,7 @@ using point_t = cluster_icp::point_t;
 using normal_t = cluster_icp::normal_t;
 
 void
-cluster_icp::set_input_cloud(cloud_ptr_t _cloud_ptr) {
+cluster_icp::set_input_cloud(cloud_ptr_const_t _cloud_ptr) {
   cloud_ = std::move(_cloud_ptr);
 }
 

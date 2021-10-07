@@ -7,6 +7,7 @@
   <arg name="gui" default="false" />
   <arg name="pause" default="false" />
   <arg name="world" default="$(find ma_loam)/resources/environments/$(arg environment)/$(arg environment).world" />
+  <rosparam param="environment_name" subst_value="true">$(arg environment)</rosparam>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <!-- Arguments  -->
@@ -23,7 +24,7 @@
   <!-- Sensor name and pose -->
   <arg name="sensor_name" default="vlp_16" />
   <arg name="sensor_pose" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]" />
-  <rosparam param="sensor_pose_init" subst_value="True">$(arg sensor_pose)</rosparam>
+  <rosparam param="sensor_pose_init" subst_value="true">$(arg sensor_pose)</rosparam>
 
   <!-- Load in the sensor -->
   <arg name="gpu" default="false" />

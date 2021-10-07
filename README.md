@@ -5,13 +5,13 @@ Given a 3D model of the environment as a prior, incorporates it in SLAM calculat
 ## Progress
 
 - [x] Setup a simulation environment for virtual lidar sensors
-- [ ] Implement a variation of cluster iterative closest point
-    - [ ] Selection
-    - [ ] Matching
-    - [ ] Weighting
-    - [ ] Rejection
-    - [ ] Error metrics
-    - [ ] Minimization
+- [x] Implement a variation of cluster iterative closest point
+  - [x] Selection
+  - [x] Matching
+  - [x] Weighting
+  - [x] Rejection
+  - [x] Error metrics
+  - [x] Minimization
 - [ ] Integrate it into LOAM framework
 
 ### General comments on work in progress
@@ -52,5 +52,3 @@ roslaunch ma_loam skarpnack.launch -v --screen      # Launches the Skarpnack sta
 ```
 
 The `-v` flag prints more verbose outputs whereas `--screen` redirects the outputs to screen. More info can be found [here](https://wiki.ros.org/roslaunch/Commandline%20Tools) 
-
-<ins>**Note:**</ins> If gazebo complains that it is unable to set the model state, just ignore it. We retry later when gazebo loads the models
