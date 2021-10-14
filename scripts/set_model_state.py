@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 
+# --- Standard Imports ---
+import threading
+from typing import List, Optional
+
 # --- ROS Imports ---
 import rospy
 import tf
 from geometry_msgs.msg import Pose, Twist
 from gazebo_msgs.msg import ModelState, ModelStates
 from gazebo_msgs.srv import SetModelState, SetModelStateResponse
-
-# --- Standard Imports ---
-import argparse
-import threading
-from typing import Dict, List, Union
-
-
-def ros_success(msg):
-    rospy.loginfo("\x1b[6;30;42m" + msg + "\x1b[0m")
 
 
 class ModelStateSetter:
@@ -40,6 +35,8 @@ class ModelStateSetter:
         self.state_sub = rospy.Subscriber(
             "/gazebo/model_states", ModelStates, self.state_cb, queue_size=1
         )
+        self.pose_sub = None
+        self.twist_sub = None
 
     def set_model_pose(self, pose) -> None:
         state = ModelState()
@@ -63,11 +60,12 @@ class ModelStateSetter:
                 self.cv.wait()
 
         response: SetModelStateResponse = self.set_state(state)
-        ros_success(
+        rospy.loginfo(
             f"Pose set for: {self.sensor_name} with success: {response.success}"
         )
 
     def listen(self) -> None:
+        self.pose_sub = rospy.Subscriber("/set_pose", Pose, self.pose_cb, queue_size=10)
         self.twist_sub = rospy.Subscriber("/cmd_vel", Twist, self.vel_cb, queue_size=1)
 
     def state_cb(self, states: ModelStates):
@@ -84,29 +82,19 @@ class ModelStateSetter:
             idx = states.name.index(self.sensor_name)
             self.last_pose: Pose = states.pose[idx]
 
+    def pose_cb(self, pose: Pose) -> None:
+        self.state.pose = pose
+        self.set_state(self.state)
+
     def vel_cb(self, twist: Twist) -> None:
         if not self.last_pose is None:
             # Set state and publish
             self.state.pose = self.last_pose
             self.state.twist = twist
-            self.state
             self.set_state(self.state)
 
 
-def parse_name() -> Dict[str, str]:
-    parser = argparse.ArgumentParser(description="Sets the pose of the model")
-    parser.add_argument(
-        "-n",
-        "--name",
-        type=str,
-        help="Name of the model whose pose should be set",
-        required=True,
-    )
-    args, _ = parser.parse_known_args()
-    return vars(args)["name"]
-
-
-def parse_pose(pose: List[float]) -> Union[List[float], None]:
+def parse_pose(pose: List[float]) -> Optional[List[float]]:
     if not isinstance(pose, list):
         return None
 
@@ -126,13 +114,13 @@ if __name__ == "__main__":
     rospy.init_node("model_state_node")
 
     # Fetch sensor info
-    sensor_name = parse_name()
-
+    sensor_name = rospy.get_param("sensor_name")
     raw_pose = rospy.get_param("sensor_pose_init", [])
     sensor_pose = parse_pose(raw_pose)
 
+    model_pose = ModelStateSetter(sensor_name)
+
     if sensor_pose:
-        model_pose = ModelStateSetter(sensor_name)
         model_pose.set_model_pose(sensor_pose)
     else:
         rospy.logerr(f"Invalid pose format: {raw_pose}")

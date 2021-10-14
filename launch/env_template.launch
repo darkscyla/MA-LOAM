@@ -26,6 +26,7 @@
 
   <!-- Sensor name and pose -->
   <arg name="sensor_name" default="vlp_16" />
+  <param name="sensor_name" type="string" value="$(arg sensor_name)" />
   <arg name="sensor_pose" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]" />
   <rosparam param="sensor_pose_init" subst_value="true">$(arg sensor_pose)</rosparam>
 
@@ -39,10 +40,7 @@
   </node>
 
   <!-- Set the default pose of the sensor at the start of the simulation. Publish to /cmd_vel later for complete twist -->
-  <node name="model_state_node" pkg="ma_loam" type="set_model_state.py" args="--name $(arg sensor_name)" output="screen" />
-
-  <!-- Load the sensor params to ROS param server -->
-  <param name="sensor_name" type="string" value="$(arg sensor_name)" />
+  <node name="model_state_node" pkg="ma_loam" type="set_model_state.py" output="screen" />
 
   <!-- Load the sensor TF publisher -->
   <node name="sensor_tf_node" pkg="ma_loam" type="tf_sensor.py" output="screen" />

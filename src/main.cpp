@@ -9,6 +9,9 @@
 #include <ros/package.h>
 #include <ros/ros.h>
 
+// --- Standard Includes ---
+#include <thread>
+
 /**
  * @brief Wrapper class that takes care of subscribing to the sensor data,
  * applying CICP, creating AABB tree and finally solving the minimization
@@ -46,6 +49,15 @@ public:
                                 new ceres::EigenQuaternionParameterization());
 
     ceres::Solver::Options options;
+    {
+      const auto num_threads = options.num_threads =
+          std::thread::hardware_concurrency();
+      if (num_threads) {
+        options.num_threads = num_threads;
+      }
+    }
+    options.linear_solver_type = ceres::DENSE_QR;
+
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
 

@@ -19,11 +19,12 @@ class SensorTF:
         self.bfp_frame = "base_footprint"
         self.bfp_link = f"{self.sensor_name}::{self.bfp_frame}"
 
-        # Broadcasts tf frame between map and base_footprint
+        # Broadcasts tf frame between map and base_footprint along with pose
         self.tf_br = tf2_ros.TransformBroadcaster()
+        self.pose_pub = rospy.Publisher("robot_pose", Pose, queue_size=1)
         self.tf_rate = rospy.Rate(rospy.get_param("sensor_tf_rate", 10))
 
-        # Subscribe to gazebo link state and forward the transform using ROS
+        # Subscribe to gazebo link state and forward the transform and pose using ROS
         self.gazebo_link_sub = rospy.Subscriber(
             "/gazebo/link_states", LinkStates, self._cb, queue_size=1
         )
@@ -46,6 +47,7 @@ class SensorTF:
         ts.transform.rotation = bfp_pose.orientation
 
         self.tf_br.sendTransform(ts)
+        self.pose_pub.publish(bfp_pose)
 
         self.tf_rate.sleep()
 
