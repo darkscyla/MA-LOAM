@@ -1,0 +1,30 @@
+<sdf version="1.4">
+  <world name="default">
+    <!-- GLobal Illumination -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <!-- Load in the CAD model of the environment -->
+    <model name="skarpnack_no_rails">
+      <pose>0 0 0  0 0 0</pose>
+      <static>true</static>
+      <link name="body">
+        <collision name="skarpnack_collision">
+          <geometry>
+            <mesh>
+              <!-- We load a stl file instead as collision checks do not need non-geometric info -->
+              <uri>file://skarpnack_no_rails/skarpnack_no_rails.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="skarpnack_visual">
+          <geometry>
+            <mesh>
+              <uri>file://skarpnack_no_rails/skarpnack_no_rails.stl</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

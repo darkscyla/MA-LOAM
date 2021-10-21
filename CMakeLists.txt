@@ -6,7 +6,9 @@ add_compile_options(-Wpedantic -Wall -Wextra -O3)
 set(CATKIN_PACKAGES
   gazebo_ros
   pcl_conversions
-  pcl_ros)
+  pcl_ros
+  tf2
+  tf2_ros)
 
 find_package(catkin REQUIRED ${CATKIN_PACKAGES})
 find_package(Ceres REQUIRED)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # --- Standard Imports ---
+import math
 import threading
 from typing import List, Optional
 
@@ -86,11 +87,33 @@ class ModelStateSetter:
         self.state.pose = pose
         self.set_state(self.state)
 
+    def to_local(self, twist: Twist) -> Twist:
+        """Converts the twist to local coordinates"""
+        yaw = tf.transformations.euler_from_quaternion(
+            [
+                self.last_pose.orientation.x,
+                self.last_pose.orientation.y,
+                self.last_pose.orientation.z,
+                self.last_pose.orientation.w,
+            ]
+        )[2]
+        _cos = math.cos(yaw)
+        _sin = math.sin(yaw)
+
+        _twist = Twist()
+        _twist.angular = twist.angular
+        _twist.linear.x = twist.linear.x * _cos - twist.linear.y * _sin
+        _twist.linear.y = twist.linear.x * _sin + twist.linear.y * _cos
+        _twist.linear.z = twist.linear.z
+
+        return _twist
+
     def vel_cb(self, twist: Twist) -> None:
+        """Set the velocity of the model"""
         if not self.last_pose is None:
             # Set state and publish
             self.state.pose = self.last_pose
-            self.state.twist = twist
+            self.state.twist = self.to_local(twist)
             self.set_state(self.state)
 
 

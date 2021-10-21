@@ -1,0 +1,11 @@
+<launch>
+  <arg name="gpu" default="false" />
+  <arg name="gui" default="false" />
+
+  <include file="$(find ma_loam)/launch/env_template.launch">
+    <arg name="environment" value="skarpnack_no_rails" />
+    <arg name="gpu" value="$(arg gpu)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="sensor_pose" value="[0.0, -40.0, 2.5, 0.0, 0.0, 0.0, 1.0]" />
+  </include>
+</launch>

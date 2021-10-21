@@ -15,6 +15,9 @@
   <depend>libpcl-all-dev</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
+  <depend>tf</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
   <depend>velodyne_description</depend>
 
   <!-- Export the path of the meshes -->
