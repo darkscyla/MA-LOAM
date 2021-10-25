@@ -160,7 +160,7 @@ cicp_ros::setup_problem(ceres::Problem &_problem,
   // Add contribution only if mesh exists
   if (!mesh_.empty()) {
     for (const auto &point : cloud_->points) {
-      _problem.AddResidualBlock(point_to_mesh_cost::create(mesh_, point),
+      _problem.AddResidualBlock(point_to_mesh_cost::create(mesh_, point, 1.0),
                                 _loss_function, _quaternion, _translation);
     }
   }

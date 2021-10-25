@@ -115,6 +115,7 @@ private:
 
     ceres::Solver::Options options;
     options.num_threads = threads_;
+    options.max_num_iterations = 10;
     options.linear_solver_type = ceres::DENSE_QR;
 
     ceres::Solver::Summary summary;

@@ -170,7 +170,7 @@ public:
 
   /**
    * @brief Checks if the underlying mesh is empty
-   * 
+   *
    * @return true If the mesh is empty
    * @return false If the mesh contains data
    */
@@ -243,9 +243,11 @@ public:
    * @param _mesh Reference to the AABB tree for fast point to point on mesh
    * computation
    * @param _point Reference to the un-aligned point to match to the mesh
+   * @param _weight Scaling factor for the cost
    */
-  point_to_mesh_cost(const aabb_tree_mesh &_mesh, const point_t &_point)
-      : mesh_(_mesh), point_(_point) {}
+  point_to_mesh_cost(const aabb_tree_mesh &_mesh, const point_t &_point,
+                     const float _weight)
+      : mesh_(_mesh), point_(_point), weight_(_weight) {}
 
   template <typename T>
   bool
@@ -272,9 +274,9 @@ public:
     if (mesh_.closest_point(
             conversions::to_point_3(curr_pt.x(), curr_pt.y(), curr_pt.z()),
             mesh_pt)) {
-      _residual[0] = curr_pt.x() - mesh_pt.x();
-      _residual[1] = curr_pt.y() - mesh_pt.y();
-      _residual[2] = curr_pt.z() - mesh_pt.z();
+      _residual[0] = weight_ * (curr_pt.x() - mesh_pt.x());
+      _residual[1] = weight_ * (curr_pt.y() - mesh_pt.y());
+      _residual[2] = weight_ * (curr_pt.z() - mesh_pt.z());
     } else {
       _residual[0] = as_T(0);
       _residual[1] = as_T(0);
@@ -290,18 +292,21 @@ public:
    * @param _mesh Reference to the AABB tree for fast point to point on mesh
    * computation
    * @param _point Reference to the un-aligned point to match to the mesh
+   * @param _weight Scaling factor for the cost
    * @return ceres::CostFunction* Pointer to ceres cost function. Ceres will
    * take ownership of the cost function so there is no need to free it manually
    */
   static ceres::CostFunction *
-  create(const aabb_tree_mesh &_mesh, const point_t &_point) {
+  create(const aabb_tree_mesh &_mesh, const point_t &_point,
+         const double _weight) {
     return new ceres::AutoDiffCostFunction<point_to_mesh_cost, 3, 4, 3>(
-        new point_to_mesh_cost(_mesh, _point));
+        new point_to_mesh_cost(_mesh, _point, _weight));
   }
 
 private:
   const aabb_tree_mesh &mesh_; ///> Store a referece to the aabb tree
   const point_t &point_;       ///> Store a reference to the point cloud point
+  const double weight_;        ///> Weighting factor for the cost
 };
 
 } // namespace ma_loam

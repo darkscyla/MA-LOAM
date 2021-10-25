@@ -19,5 +19,5 @@ visualize: false    # To visualize or not to visualize
 scale: 0.05         # Scale of normals
 
 # CICP node
-parallel_solver: false      # Run optimizer in parallel mode
+parallel_solver: true       # Run optimizer in parallel mode
 print_optimization: false   # Set to true to print ceres optimized pose
