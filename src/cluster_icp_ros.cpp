@@ -106,6 +106,7 @@ cicp_ros::set_point_cloud(cloud_ptr_const_t _cloud) {
   // Go over the voxel grid and try to prune them using k means clustering
   cloud_ptr_t pruned_cloud(new cloud_t);
   pruned_cloud->header.frame_id = _cloud->header.frame_id;
+  point_weights_.clear();
 
   for (auto itt = voxel_grid->leaf_depth_begin(),
             itt_end = voxel_grid->leaf_depth_end();
@@ -138,6 +139,7 @@ cicp_ros::set_point_cloud(cloud_ptr_const_t _cloud) {
       }
       center /= opt_indices.size();
       pruned_cloud->push_back({center.x(), center.y(), center.z()});
+      point_weights_.push_back(opt_indices.size());
     }
   }
 
@@ -159,9 +161,17 @@ cicp_ros::setup_problem(ceres::Problem &_problem,
                         double *_quaternion, double *_translation) const {
   // Add contribution only if mesh exists
   if (!mesh_.empty()) {
+    // Compute the relative weight of the geometric features
+    const auto cardinality =
+        std::max<int>(cloud_->points.size(), min_cardinality_);
+    const auto base_weight = lambda_ / cardinality;
+
+    size_t idx = 0;
     for (const auto &point : cloud_->points) {
-      _problem.AddResidualBlock(point_to_mesh_cost::create(mesh_, point, 1.0),
-                                _loss_function, _quaternion, _translation);
+      _problem.AddResidualBlock(
+          point_to_mesh_cost::create(mesh_, point,
+                                     base_weight * point_weights_[idx++]),
+          _loss_function, _quaternion, _translation);
     }
   }
 }
@@ -195,6 +205,10 @@ cicp_ros::load_params() {
 
   nh_.param<float>("voxel_size", voxel_size_, 0.1);
   nh_.param<float>("merge_eps", merge_eps_, 0.25);
+
+  // Get the R-LOAM parameters
+  nh_.param<int>("min_cardinality", min_cardinality_, 100);
+  nh_.param<float>("lambda", lambda_, 1);
 
   // We do not setup visualization stuff unless requested
   nh_.param<bool>("visualize", visualize_, false);

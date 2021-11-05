@@ -14,6 +14,14 @@ min_elements: 1     # Minimum points required for a feature to be valid
 voxel_size: 0.1     # Size of voxel in world units (for e.g. meters)
 merge_eps: 0.25     # Norm difference below which normals may be merged
 
+# R-LOAM parameters
+min_cardinality: 100  # Minimum cardinality of geometric features. This allows 
+                      # to not give too much importance in case of low geometric
+                      # features
+lambda: 1.0           # The lambda term in R-LOAM. If set to 1, corner, flat and
+                      # geometric points have equal weights. If set to 2, 
+                      # geometric points have equal weight to LOAM points
+
 # Visualization
 visualize: false    # To visualize or not to visualize
 scale: 0.05         # Scale of normals

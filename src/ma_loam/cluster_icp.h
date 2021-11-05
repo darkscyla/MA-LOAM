@@ -246,7 +246,7 @@ public:
    * @param _weight Scaling factor for the cost
    */
   point_to_mesh_cost(const aabb_tree_mesh &_mesh, const point_t &_point,
-                     const float _weight)
+                     const double _weight)
       : mesh_(_mesh), point_(_point), weight_(_weight) {}
 
   template <typename T>

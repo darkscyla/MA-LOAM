@@ -12,6 +12,7 @@
 // --- Standard Includes ---
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace ma_loam {
 
@@ -73,8 +74,9 @@ public:
   // MA-LOAM underlying AABB tree
   aabb_tree_mesh mesh_;
 
-  // Pruned point cloud after clustering
+  // Pruned point cloud after clustering and their weights
   cloud_ptr_t cloud_;
+  std::vector<size_t> point_weights_;
 
   // CICP Parameters
   int nn_normals_;   ///> neighbors to search for normals computation
@@ -84,6 +86,10 @@ public:
   float merge_eps_;  ///> Difference to tolerate for merging
                      ///> This distance d can be converted to angle
                      ///> using theta = 2 * asin( d / 2)
+
+  // R-LOAM parameters
+  int min_cardinality_; ///> Minimum cardinality of geometric features
+  float lambda_;        ///> Relative weight of the geometric features
 
   // Visualization
   using pub_ptr = std::unique_ptr<ros::Publisher>;
