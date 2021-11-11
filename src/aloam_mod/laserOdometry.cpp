@@ -34,27 +34,35 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cmath>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
+// --- Internal Includes ---
+#include <ma_loam/aloam_mod/common.h>
+#include <ma_loam/aloam_mod/lidarFactor.hpp>
+#include <ma_loam/aloam_mod/tic_toc.h>
+
+// --- Internal Includes ---
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_types.h>
+
+// --- ROS Includes ---
+#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+
+// --- Eigen Includes ---
 #include <eigen3/Eigen/Dense>
+
+// --- Standard Includes ---
+#include <cmath>
 #include <mutex>
 #include <queue>
-
-#include "aloam_velodyne/common.h"
-#include "aloam_velodyne/tic_toc.h"
-#include "lidarFactor.hpp"
 
 #define DISTORTION 0
 

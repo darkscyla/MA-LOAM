@@ -1,26 +1,35 @@
 // Author:   Tong Qin               qintonguav@gmail.com
 // 	         Shaozu Cao 		    saozu.cao@connect.ust.hk
 
-#include <iostream>
+// --- PCL Includes ---
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+// --- OpenCV Includes ---
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
+
+// --- ROS Includes ---
+#include <cv_bridge/cv_bridge.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <image_transport/image_transport.h>
+#include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <ros/ros.h>
+#include <rosbag/bag.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/image_encodings.h>
+
+// --- Eigen Includes ---
+#include <eigen3/Eigen/Dense>
+
+// --- Standard Includes ---
 #include <fstream>
+#include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
-#include <opencv2/opencv.hpp>
-#include <image_transport/image_transport.h>
-#include <opencv2/highgui/highgui.hpp>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <eigen3/Eigen/Dense>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <sensor_msgs/PointCloud2.h>
 
 std::vector<float> read_lidar_data(const std::string lidar_data_path)
 {

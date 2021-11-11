@@ -4,7 +4,10 @@ project(ma_loam)
 add_compile_options(-Wpedantic -Wall -Wextra -O3)
 
 set(CATKIN_PACKAGES
+  cv_bridge
   gazebo_ros
+  image_transport
+  nav_msgs
   pcl_conversions
   pcl_ros
   tf2
@@ -13,6 +16,7 @@ set(CATKIN_PACKAGES
 find_package(catkin REQUIRED ${CATKIN_PACKAGES})
 find_package(Ceres REQUIRED)
 find_package(CGAL REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED)
 
 ###################################
@@ -44,8 +48,10 @@ target_link_libraries(${PROJECT_NAME}
   ${CGAL_LIBRARIES}
   ${PCL_LIBRARIES})
 
+# Independent runner from LOAM
 add_executable(${PROJECT_NAME}_runner src/main.cpp)
-target_include_directories(${PROJECT_NAME}_runner PUBLIC src 
+target_include_directories(${PROJECT_NAME}_runner PUBLIC
+  src 
   ${catkin_INCLUDE_DIRS}
   ${CERES_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
@@ -55,6 +61,58 @@ target_link_libraries(${PROJECT_NAME}_runner ${PROJECT_NAME}
   ${CERES_LIBRARIES}
   ${PCL_LIBRARIES}
   ${pcl_ros_LIBRARIES})
+
+# Scan registration
+add_executable(${PROJECT_NAME}_scan_registration
+  src/aloam_mod/scanRegistration.cpp)
+target_include_directories(${PROJECT_NAME}_scan_registration PUBLIC
+  src
+  ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME}_scan_registration PUBLIC
+  ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES})
+
+# Odometry
+add_executable(${PROJECT_NAME}_odometry
+  src/aloam_mod/laserOdometry.cpp)
+target_include_directories(${PROJECT_NAME}_odometry PUBLIC
+  src
+  ${catkin_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME}_odometry PUBLIC
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
+  ${PCL_LIBRARIES})
+
+# Mapping
+add_executable(${PROJECT_NAME}_mapping
+  src/aloam_mod/laserMapping.cpp)
+target_include_directories(${PROJECT_NAME}_mapping PUBLIC
+  src
+  ${catkin_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME}_mapping PUBLIC
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
+  ${PCL_LIBRARIES})
+
+# KITTI helper (though the model does not exist, we can still use 
+# the preprocessing phase to improve accuracy)
+add_executable(${PROJECT_NAME}_kitti_helper
+  src/aloam_mod/kittiHelper.cpp)
+target_include_directories(${PROJECT_NAME}_kitti_helper PUBLIC
+  src
+  ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME}_kitti_helper PUBLIC
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${PCL_LIBRARIES})
 
 #############
 ## Install ##

@@ -11,8 +11,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>cv_bridge</depend>
   <depend>gazebo_ros</depend>
   <depend>libpcl-all-dev</depend>
+  <depend>image_transport</depend>
+  <depend>nav_msgs</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
   <depend>tf</depend>

@@ -34,24 +34,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// --- Internal Includes ---
+#include <ma_loam/aloam_mod/common.h>
+#include <ma_loam/aloam_mod/tic_toc.h>
 
-#include <cmath>
-#include <vector>
-#include <string>
-#include "aloam_velodyne/common.h"
-#include "aloam_velodyne/tic_toc.h"
-#include <nav_msgs/Odometry.h>
-#include <opencv2/opencv.hpp>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
+// --- PCL Includes ---
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+// --- ROS Includes ---
+#include <nav_msgs/Odometry.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+
+// --- OpenCV Includes ---
+#include <opencv2/opencv.hpp>
+
+// --- Standard Includes ---
+#include <cmath>
+#include <string>
+#include <vector>
 
 using std::atan2;
 using std::cos;

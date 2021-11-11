@@ -34,34 +34,42 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <math.h>
-#include <vector>
-#include <aloam_velodyne/common.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
+// --- Internal Includes ---
+#include <ma_loam/aloam_mod/common.h>
+#include <ma_loam/aloam_mod/lidarFactor.hpp>
+#include <ma_loam/aloam_mod/tic_toc.h>
+
+// --- PCL Includes ---
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+// --- ROS Includes ---
+#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+
+// --- Eigen Includes ---
 #include <eigen3/Eigen/Dense>
+
+// --- Ceres Includes ---
 #include <ceres/ceres.h>
+
+// --- Standard Includes ---
+#include <iostream>
+#include <math.h>
 #include <mutex>
 #include <queue>
-#include <thread>
-#include <iostream>
 #include <string>
-
-#include "lidarFactor.hpp"
-#include "aloam_velodyne/common.h"
-#include "aloam_velodyne/tic_toc.h"
-
+#include <thread>
+#include <vector>
 
 int frameCount = 0;
 

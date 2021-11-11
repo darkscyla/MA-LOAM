@@ -48,7 +48,7 @@ to_marker_array(
             itt_end = _voxel_grid->leaf_depth_end();
        itt != itt_end; ++itt) {
     // For each voxel leaf, we assign a unique color (rand is a bad way of
-    // generating rnadom numbers but we dont care at the moment as it is just
+    // generating random numbers but we dont care at the moment as it is just
     // debug info)
     def_marker.color.r = ((float)rand()) / (RAND_MAX);
     def_marker.color.g = ((float)rand()) / (RAND_MAX);
