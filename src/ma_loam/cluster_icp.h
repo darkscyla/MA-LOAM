@@ -1,3 +1,5 @@
+#pragma once
+
 // --- PCL Includes ---
 #include <pcl/ml/kmeans.h>
 #include <pcl/octree/octree.h>
@@ -231,6 +233,13 @@ to_point_3(const ceres::Jet<T, N> &_x, const ceres::Jet<T, N> &_y,
 
 } // namespace conversions
 
+struct pose_wrapper {
+  pose_wrapper() : quat(1, 0, 0, 0), trans(0, 0, 0) {}
+
+  Eigen::Quaterniond quat;
+  Eigen::Vector3d trans;
+};
+
 class point_to_mesh_cost {
 public:
   using point_t = cluster_icp::point_t;
@@ -243,11 +252,14 @@ public:
    * @param _mesh Reference to the AABB tree for fast point to point on mesh
    * computation
    * @param _point Reference to the un-aligned point to match to the mesh
+   * @param _global_pose Wrapper to global pose. Used to transform local
+   * transformation to global for point to mesh distance computation
    * @param _weight Scaling factor for the cost
    */
   point_to_mesh_cost(const aabb_tree_mesh &_mesh, const point_t &_point,
-                     const double _weight)
-      : mesh_(_mesh), point_(_point), weight_(_weight) {}
+                     const pose_wrapper &_global_pose, const double _weight)
+      : mesh_(_mesh), point_(_point), global_pose_(_global_pose),
+        weight_(_weight) {}
 
   template <typename T>
   bool
@@ -259,11 +271,16 @@ public:
     Eigen::Matrix<T, 3, 1> curr_pt{as_T(point_.x), as_T(point_.y),
                                    as_T(point_.z)};
 
-    // Map the quaternion and translation to Eigen types
+    // Map the quaternion and translation to Eigen types. We must first
+    // transform them to global coordinates
+    const Eigen::Quaternion<T> g_quat = global_pose_.quat.cast<T>();
+    const Eigen::Matrix<T, 3, 1> g_trans = global_pose_.trans.cast<T>();
+
     const Eigen::Quaternion<T> quaternion =
-        Eigen::Map<const Eigen::Quaternion<T>>(_quaternion);
+        g_quat * Eigen::Map<const Eigen::Quaternion<T>>(_quaternion);
     const Eigen::Matrix<T, 3, 1> translation =
-        Eigen::Map<const Eigen::Matrix<T, 3, 1>>(_translation);
+        g_trans +
+        g_quat * Eigen::Map<const Eigen::Matrix<T, 3, 1>>(_translation);
 
     // Apply the rotation and translation
     curr_pt = quaternion * curr_pt + translation;
@@ -292,21 +309,24 @@ public:
    * @param _mesh Reference to the AABB tree for fast point to point on mesh
    * computation
    * @param _point Reference to the un-aligned point to match to the mesh
+   * @param _global_pose Wrapper to global pose. Used to transform local
+   * transformation to global for point to mesh distance computation
    * @param _weight Scaling factor for the cost
    * @return ceres::CostFunction* Pointer to ceres cost function. Ceres will
    * take ownership of the cost function so there is no need to free it manually
    */
   static ceres::CostFunction *
   create(const aabb_tree_mesh &_mesh, const point_t &_point,
-         const double _weight) {
+         const pose_wrapper &_global_pose, const double _weight) {
     return new ceres::AutoDiffCostFunction<point_to_mesh_cost, 3, 4, 3>(
-        new point_to_mesh_cost(_mesh, _point, _weight));
+        new point_to_mesh_cost(_mesh, _point, _global_pose, _weight));
   }
 
 private:
   const aabb_tree_mesh &mesh_; ///> Store a referece to the aabb tree
   const point_t &point_;       ///> Store a reference to the point cloud point
-  const double weight_;        ///> Weighting factor for the cost
+  const pose_wrapper &global_pose_; ///> Stores a reference to the global pose
+  const double weight_;             ///> Weighting factor for the cost
 };
 
 } // namespace ma_loam

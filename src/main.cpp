@@ -35,37 +35,13 @@ public:
             nh_.advertise<geometry_msgs::PoseStamped>("optimized_pose", 10)},
         translation_{0, 0, 0}, quaternion_{0, 0, 0, 1}, threads_(1) {
     // Setup
-    set_threads();
-    set_initial_pose();
+    ma_loam::set_threads(nh_, threads_);
+    ma_loam::set_initial_pose(nh_, global_pose_);
     set_log_lvl();
     init_ = set_static_tranform();
   }
 
 private:
-  void
-  set_threads() {
-    bool parallel;
-    nh_.param<bool>("parallel_solver", parallel, false);
-
-    if (parallel) {
-      const auto num_threads = std::thread::hardware_concurrency();
-      if (num_threads) {
-        threads_ = num_threads;
-      }
-    }
-  }
-
-  void
-  set_initial_pose() {
-    const auto pose = ma_loam::parse_pose(nh_, "sensor_pose_init");
-    if (pose.size() == 7) {
-      std::copy(pose.begin(), pose.begin() + 3, std::begin(translation_));
-      std::copy(pose.begin() + 3, pose.end(), std::begin(quaternion_));
-    } else {
-      ROS_INFO("Unable to fetch sensor initial pose");
-    }
-  }
-
   bool
   set_static_tranform() {
     tf2_ros::Buffer tf_buffer;
@@ -101,12 +77,15 @@ private:
       return;
     }
     const auto stamp = ros::Time::now(); ///> Use received time as stamp
+    cicp_ros_.set_input_cloud(_msg);
 
-    cicp_ros_.set_point_cloud(_msg);
+    // Set up the global pose
+    ma_loam::pose_wrapper global_pose;
 
     // Solve the minimization probelm
     ceres::Problem problem;
-    cicp_ros_.setup_problem(problem, nullptr, quaternion_, translation_);
+    cicp_ros_.setup_problem(problem, new ceres::HuberLoss(1.0), global_pose_, quaternion_,
+                            translation_);
 
     // Add parametrization for quaternion as all 4 components are not
     // independent
@@ -120,6 +99,13 @@ private:
 
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
+
+    // Update the global pose and publish the result
+    Eigen::Map<Eigen::Quaterniond> l_quat(quaternion_);
+    Eigen::Map<Eigen::Vector3d> l_trans(translation_);
+    global_pose_.quat = global_pose_.quat * l_quat;
+    global_pose_.trans = global_pose_.trans + global_pose_.quat * l_trans;
+
     publish_optimized_pose(stamp);
 
     if (print_optimization_) {
@@ -136,14 +122,14 @@ private:
     pose.header.frame_id = "world";
     pose.header.stamp = _stamp;
 
-    pose.pose.position.x = translation_[0];
-    pose.pose.position.y = translation_[1];
-    pose.pose.position.z = translation_[2];
+    pose.pose.position.x = global_pose_.trans.x();
+    pose.pose.position.y = global_pose_.trans.y();
+    pose.pose.position.z = global_pose_.trans.z();
 
-    pose.pose.orientation.x = quaternion_[0];
-    pose.pose.orientation.y = quaternion_[1];
-    pose.pose.orientation.z = quaternion_[2];
-    pose.pose.orientation.w = quaternion_[3];
+    pose.pose.orientation.x = global_pose_.quat.x();
+    pose.pose.orientation.y = global_pose_.quat.y();
+    pose.pose.orientation.z = global_pose_.quat.z();
+    pose.pose.orientation.w = global_pose_.quat.w();
     tf2::doTransform(pose.pose, pose.pose, transform_);
 
     pose_pub_.publish(pose);
@@ -152,10 +138,11 @@ private:
   void
   log_info() const {
     ROS_INFO_STREAM("Pose [tx, ty, tz, qx, qy, qz, qw]: "
-                    << translation_[0] << " " << translation_[1] << " "
-                    << translation_[2] << " " << quaternion_[0] << " "
-                    << quaternion_[1] << " " << quaternion_[2] << " "
-                    << quaternion_[3]);
+                    << global_pose_.trans.x() << " " << global_pose_.trans.y()
+                    << " " << global_pose_.trans.z() << " "
+                    << global_pose_.quat.x() << " " << global_pose_.quat.y()
+                    << " " << global_pose_.quat.z() << " "
+                    << global_pose_.quat.w());
   };
 
   // Initiliazed
@@ -167,9 +154,11 @@ private:
   ros::Publisher pose_pub_;
   geometry_msgs::TransformStamped transform_;
 
-  // Translation and orientation for ceres
+  // Local and global translation and orientation for ceres. We do not wrap the
+  // local pose for ceres
   double translation_[3];
   double quaternion_[4];
+  ma_loam::pose_wrapper global_pose_;
 
   // CICP
   ma_loam::cicp_ros cicp_ros_;

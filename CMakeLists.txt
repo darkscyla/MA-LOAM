@@ -42,7 +42,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   ${CERES_INCLUDE_DIRS}
   ${CGAL_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
   ${CGAL_LIBRARIES}
@@ -56,7 +56,8 @@ target_include_directories(${PROJECT_NAME}_runner PUBLIC
   ${CERES_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${pcl_ros_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}_runner ${PROJECT_NAME} 
+target_link_libraries(${PROJECT_NAME}_runner
+  ${PROJECT_NAME} 
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
   ${PCL_LIBRARIES}
@@ -83,6 +84,7 @@ target_include_directories(${PROJECT_NAME}_odometry PUBLIC
   ${CERES_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_odometry PUBLIC
+  ${PROJECT_NAME} 
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
   ${PCL_LIBRARIES})

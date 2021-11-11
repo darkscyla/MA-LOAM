@@ -37,7 +37,7 @@ public:
    * resulting point cloud is sotred internally
    */
   void
-  set_point_cloud(cloud_ptr_const_t _cloud);
+  set_input_cloud(cloud_ptr_const_t _cloud);
 
   /**
    * @brief Add the contribution of the underlying point cloud to Ceres problem
@@ -47,14 +47,17 @@ public:
    *
    * @param[in] _problem The problem to which the contribution is added
    * @param[in] _loss_function The loss function to use for the minimization
+   * @param[in] _global_pose Reference to the global pose. It is used to
+   * transform the local points to global
    * @param[in] _quaternion Pointer to quaternion array to optimize
    * @param[in] _translation Pointer to translation array to optimize
    */
   void
   setup_problem(ceres::Problem &_problem, ceres::LossFunction *_loss_function,
-                double *_quaternion, double *_translation) const;
+                const pose_wrapper &_global_pose, double *_quaternion,
+                double *_translation) const;
 
-public:
+private:
   /**
    * @brief Helper method to get the absolute path of the environment stl file
    *
@@ -74,9 +77,8 @@ public:
   // MA-LOAM underlying AABB tree
   aabb_tree_mesh mesh_;
 
-  // Pruned point cloud after clustering and their weights
+  // Pruned point cloud after clustering
   cloud_ptr_t cloud_;
-  std::vector<size_t> point_weights_;
 
   // CICP Parameters
   int nn_normals_;   ///> neighbors to search for normals computation

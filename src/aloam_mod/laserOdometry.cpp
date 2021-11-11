@@ -38,6 +38,8 @@
 #include <ma_loam/aloam_mod/common.h>
 #include <ma_loam/aloam_mod/lidarFactor.hpp>
 #include <ma_loam/aloam_mod/tic_toc.h>
+#include <ma_loam/cluster_icp_ros.h>
+#include <ma_loam/utils.h>
 
 // --- Internal Includes ---
 #include <pcl/filters/voxel_grid.h>
@@ -74,6 +76,7 @@ constexpr double DISTANCE_SQ_THRESHOLD = 25;
 constexpr double NEARBY_SCAN = 2.5;
 
 int skipFrameNum = 5;
+unsigned int threads = 1;
 bool systemInited = false;
 
 double timeCornerPointsSharp = 0;
@@ -98,8 +101,7 @@ int laserCloudCornerLastNum = 0;
 int laserCloudSurfLastNum = 0;
 
 // Transformation from current frame to world frame
-Eigen::Quaterniond q_w_curr(1, 0, 0, 0);
-Eigen::Vector3d t_w_curr(0, 0, 0);
+ma_loam::pose_wrapper w_curr;
 
 // q_curr_last(x, y, z, w), t_curr_last
 double para_q[4] = {0, 0, 0, 1};
@@ -196,6 +198,12 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "laserOdometry");
     ros::NodeHandle nh;
 
+    // ma_loam stuff
+    ma_loam::set_threads(nh, threads);
+    ma_loam::set_initial_pose(nh, w_curr);
+    ma_loam::cicp_ros cicp_ros;
+    ma_loam::cicp_ros::cloud_ptr_t full_cloud;
+
     nh.param<int>("mapping_skip_frame", skipFrameNum, 2);
 
     printf("Mapping %d Hz \n", 10 / skipFrameNum);
@@ -281,6 +289,14 @@ int main(int argc, char **argv)
             {
                 int cornerPointsSharpNum = cornerPointsSharp->points.size();
                 int surfPointsFlatNum = surfPointsFlat->points.size();
+                const auto cornerPointsWeight = 1.0 / cornerPointsSharpNum;
+                const auto surfacePointsWeight = 1.0 / surfPointsFlatNum;
+
+                // Convert the full point cloud to cicp compatible type and run CICP
+                TicToc t_cicp_preprocessing;
+                pcl::copyPointCloud(*laserCloudFullRes, *full_cloud);
+                cicp_ros.set_input_cloud(full_cloud);
+                printf("CICP ROS pre-processing took %f \n", t_cicp_preprocessing.toc());
 
                 TicToc t_opt;
                 for (size_t opti_counter = 0; opti_counter < 2; ++opti_counter)
@@ -385,7 +401,7 @@ int main(int argc, char **argv)
                                 s = (cornerPointsSharp->points[i].intensity - int(cornerPointsSharp->points[i].intensity)) / SCAN_PERIOD;
                             else
                                 s = 1.0;
-                            ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s);
+                            ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s, cornerPointsWeight);
                             problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
                             corner_correspondence++;
                         }
@@ -483,12 +499,14 @@ int main(int argc, char **argv)
                                     s = (surfPointsFlat->points[i].intensity - int(surfPointsFlat->points[i].intensity)) / SCAN_PERIOD;
                                 else
                                     s = 1.0;
-                                ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s);
+                                ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s, surfacePointsWeight);
                                 problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
                                 plane_correspondence++;
                             }
                         }
                     }
+
+                    cicp_ros.setup_problem(problem, loss_function, w_curr, para_q, para_t);
 
                     //printf("coner_correspondance %d, plane_correspondence %d \n", corner_correspondence, plane_correspondence);
                     printf("data association time %f ms \n", t_data.toc());
@@ -509,8 +527,8 @@ int main(int argc, char **argv)
                 }
                 printf("optimization twice time %f \n", t_opt.toc());
 
-                t_w_curr = t_w_curr + q_w_curr * t_last_curr;
-                q_w_curr = q_w_curr * q_last_curr;
+                w_curr.trans = w_curr.trans + w_curr.quat * t_last_curr;
+                w_curr.quat = w_curr.quat * q_last_curr;
             }
 
             TicToc t_pub;
@@ -520,13 +538,13 @@ int main(int argc, char **argv)
             laserOdometry.header.frame_id = "camera_init";
             laserOdometry.child_frame_id = "laser_odom";
             laserOdometry.header.stamp = ros::Time().fromSec(timeSurfPointsLessFlat);
-            laserOdometry.pose.pose.orientation.x = q_w_curr.x();
-            laserOdometry.pose.pose.orientation.y = q_w_curr.y();
-            laserOdometry.pose.pose.orientation.z = q_w_curr.z();
-            laserOdometry.pose.pose.orientation.w = q_w_curr.w();
-            laserOdometry.pose.pose.position.x = t_w_curr.x();
-            laserOdometry.pose.pose.position.y = t_w_curr.y();
-            laserOdometry.pose.pose.position.z = t_w_curr.z();
+            laserOdometry.pose.pose.orientation.x = w_curr.quat.x();
+            laserOdometry.pose.pose.orientation.y = w_curr.quat.y();
+            laserOdometry.pose.pose.orientation.z = w_curr.quat.z();
+            laserOdometry.pose.pose.orientation.w = w_curr.quat.w();
+            laserOdometry.pose.pose.position.x = w_curr.trans.x();
+            laserOdometry.pose.pose.position.y = w_curr.trans.y();
+            laserOdometry.pose.pose.position.z = w_curr.trans.z();
             pubLaserOdometry.publish(laserOdometry);
 
             geometry_msgs::PoseStamped laserPose;

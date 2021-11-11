@@ -12,8 +12,9 @@
 struct LidarEdgeFactor
 {
 	LidarEdgeFactor(Eigen::Vector3d curr_point_, Eigen::Vector3d last_point_a_,
-					Eigen::Vector3d last_point_b_, double s_)
-		: curr_point(curr_point_), last_point_a(last_point_a_), last_point_b(last_point_b_), s(s_) {}
+					Eigen::Vector3d last_point_b_, double s_, double weight_)
+		: curr_point(curr_point_), last_point_a(last_point_a_), 
+			last_point_b(last_point_b_), s(s_), weight(weight_) {}
 
 	template <typename T>
 	bool operator()(const T *q, const T *t, T *residual) const
@@ -35,31 +36,31 @@ struct LidarEdgeFactor
 		Eigen::Matrix<T, 3, 1> nu = (lp - lpa).cross(lp - lpb);
 		Eigen::Matrix<T, 3, 1> de = lpa - lpb;
 
-		residual[0] = nu.x() / de.norm();
-		residual[1] = nu.y() / de.norm();
-		residual[2] = nu.z() / de.norm();
+		residual[0] = weight * nu.x() / de.norm();
+		residual[1] = weight * nu.y() / de.norm();
+		residual[2] = weight * nu.z() / de.norm();
 
 		return true;
 	}
 
 	static ceres::CostFunction *Create(const Eigen::Vector3d curr_point_, const Eigen::Vector3d last_point_a_,
-									   const Eigen::Vector3d last_point_b_, const double s_)
+									   const Eigen::Vector3d last_point_b_, const double s_, const double weight_ = 1.0)
 	{
 		return (new ceres::AutoDiffCostFunction<
 				LidarEdgeFactor, 3, 4, 3>(
-			new LidarEdgeFactor(curr_point_, last_point_a_, last_point_b_, s_)));
+			new LidarEdgeFactor(curr_point_, last_point_a_, last_point_b_, s_, weight_)));
 	}
 
 	Eigen::Vector3d curr_point, last_point_a, last_point_b;
-	double s;
+	double s, weight;
 };
 
 struct LidarPlaneFactor
 {
 	LidarPlaneFactor(Eigen::Vector3d curr_point_, Eigen::Vector3d last_point_j_,
-					 Eigen::Vector3d last_point_l_, Eigen::Vector3d last_point_m_, double s_)
+					 Eigen::Vector3d last_point_l_, Eigen::Vector3d last_point_m_, double s_, double weight_)
 		: curr_point(curr_point_), last_point_j(last_point_j_), last_point_l(last_point_l_),
-		  last_point_m(last_point_m_), s(s_)
+		  last_point_m(last_point_m_), s(s_), weight(weight_)
 	{
 		ljm_norm = (last_point_j - last_point_l).cross(last_point_j - last_point_m);
 		ljm_norm.normalize();
@@ -84,23 +85,23 @@ struct LidarPlaneFactor
 		Eigen::Matrix<T, 3, 1> lp;
 		lp = q_last_curr * cp + t_last_curr;
 
-		residual[0] = (lp - lpj).dot(ljm);
+		residual[0] = weight * (lp - lpj).dot(ljm);
 
 		return true;
 	}
 
 	static ceres::CostFunction *Create(const Eigen::Vector3d curr_point_, const Eigen::Vector3d last_point_j_,
 									   const Eigen::Vector3d last_point_l_, const Eigen::Vector3d last_point_m_,
-									   const double s_)
+									   const double s_, const double weight_ = 0.0)
 	{
 		return (new ceres::AutoDiffCostFunction<
 				LidarPlaneFactor, 1, 4, 3>(
-			new LidarPlaneFactor(curr_point_, last_point_j_, last_point_l_, last_point_m_, s_)));
+			new LidarPlaneFactor(curr_point_, last_point_j_, last_point_l_, last_point_m_, s_, weight_)));
 	}
 
 	Eigen::Vector3d curr_point, last_point_j, last_point_l, last_point_m;
 	Eigen::Vector3d ljm_norm;
-	double s;
+	double s, weight;
 };
 
 struct LidarPlaneNormFactor

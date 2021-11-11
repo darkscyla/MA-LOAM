@@ -82,15 +82,16 @@ to_marker_array(
 
 } // namespace visualization
 
-cicp_ros::cicp_ros() : nh_{}, mesh_{fetch_environment_path()} {
+cicp_ros::cicp_ros()
+    : nh_{}, mesh_{fetch_environment_path()}, cloud_(new cloud_t) {
   // Load in all the parameters
   load_params();
 }
 
 void
-cicp_ros::set_point_cloud(cloud_ptr_const_t _cloud) {
+cicp_ros::set_input_cloud(cloud_ptr_const_t _input_cloud) {
   ma_loam::cluster_icp cicp;
-  cicp.set_input_cloud(_cloud);
+  cicp.set_input_cloud(_input_cloud);
 
   // Compute normals in another thead while voxelizing the point cloud, normals
   // might potentially take time to compute
@@ -104,9 +105,8 @@ cicp_ros::set_point_cloud(cloud_ptr_const_t _cloud) {
   const auto voxel_grid = voxel_future.get();
 
   // Go over the voxel grid and try to prune them using k means clustering
-  cloud_ptr_t pruned_cloud(new cloud_t);
-  pruned_cloud->header.frame_id = _cloud->header.frame_id;
-  point_weights_.clear();
+  cloud_->clear();
+  cloud_->header.frame_id = _input_cloud->header.frame_id;
 
   for (auto itt = voxel_grid->leaf_depth_begin(),
             itt_end = voxel_grid->leaf_depth_end();
@@ -135,22 +135,18 @@ cicp_ros::set_point_cloud(cloud_ptr_const_t _cloud) {
       Eigen::Vector3f center = Eigen::Vector3f::Zero();
       for (const auto local_idx : opt_indices) {
         const auto global_idx = indicies[local_idx];
-        center += _cloud->points[global_idx].getVector3fMap();
+        center += _input_cloud->points[global_idx].getVector3fMap();
       }
       center /= opt_indices.size();
-      pruned_cloud->push_back({center.x(), center.y(), center.z()});
-      point_weights_.push_back(opt_indices.size());
+      cloud_->push_back({center.x(), center.y(), center.z()});
     }
   }
 
-  // Assign ptr to internal cloud
-  cloud_ = std::move(pruned_cloud);
-
   if (visualize_) {
     // Publish the info
-    normals_pub_->publish(visualization::to_marker_array(_cloud, cloud_normals,
-                                                         voxel_grid, scale_));
-    orig_pcl_pub_->publish(_cloud);
+    normals_pub_->publish(visualization::to_marker_array(
+        _input_cloud, cloud_normals, voxel_grid, scale_));
+    orig_pcl_pub_->publish(_input_cloud);
     pruned_pcl_pub_->publish(cloud_); // We moved the pruned cloud
   }
 }
@@ -158,19 +154,18 @@ cicp_ros::set_point_cloud(cloud_ptr_const_t _cloud) {
 void
 cicp_ros::setup_problem(ceres::Problem &_problem,
                         ceres::LossFunction *_loss_function,
-                        double *_quaternion, double *_translation) const {
+                        const pose_wrapper &_global_pose, double *_quaternion,
+                        double *_translation) const {
   // Add contribution only if mesh exists
   if (!mesh_.empty()) {
     // Compute the relative weight of the geometric features
     const auto cardinality =
         std::max<int>(cloud_->points.size(), min_cardinality_);
-    const auto base_weight = lambda_ / cardinality;
+    const auto weight = lambda_ / cardinality;
 
-    size_t idx = 0;
     for (const auto &point : cloud_->points) {
       _problem.AddResidualBlock(
-          point_to_mesh_cost::create(mesh_, point,
-                                     base_weight * point_weights_[idx++]),
+          point_to_mesh_cost::create(mesh_, point, _global_pose, weight),
           _loss_function, _quaternion, _translation);
     }
   }
