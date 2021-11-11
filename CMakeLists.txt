@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(ma_loam)
 
-add_compile_options(-Wpedantic -Wall -Wextra -O3)
+add_compile_options(-Wpedantic -Wall -Wextra -O3 -g)
 
 set(CATKIN_PACKAGES
   cv_bridge

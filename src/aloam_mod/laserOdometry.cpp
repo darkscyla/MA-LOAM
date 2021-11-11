@@ -202,7 +202,7 @@ int main(int argc, char **argv)
     ma_loam::set_threads(nh, threads);
     ma_loam::set_initial_pose(nh, w_curr);
     ma_loam::cicp_ros cicp_ros;
-    ma_loam::cicp_ros::cloud_ptr_t full_cloud;
+    ma_loam::cicp_ros::cloud_ptr_t full_cloud(new ma_loam::cicp_ros::cloud_t);
 
     nh.param<int>("mapping_skip_frame", skipFrameNum, 2);
 
@@ -227,6 +227,8 @@ int main(int argc, char **argv)
     ros::Publisher pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/laser_odom_to_init", 100);
 
     ros::Publisher pubLaserPath = nh.advertise<nav_msgs::Path>("/laser_odom_path", 100);
+
+    ros::Publisher pubOptimizedPose = nh.advertise<geometry_msgs::PoseStamped>("/optimized_pose", 100);
 
     nav_msgs::Path laserPath;
 
@@ -292,7 +294,7 @@ int main(int argc, char **argv)
                 const auto cornerPointsWeight = 1.0 / cornerPointsSharpNum;
                 const auto surfacePointsWeight = 1.0 / surfPointsFlatNum;
 
-                // Convert the full point cloud to cicp compatible type and run CICP
+                // Convert the full point cloud to CICP compatible type and run CICP
                 TicToc t_cicp_preprocessing;
                 pcl::copyPointCloud(*laserCloudFullRes, *full_cloud);
                 cicp_ros.set_input_cloud(full_cloud);
@@ -518,6 +520,7 @@ int main(int argc, char **argv)
 
                     TicToc t_solver;
                     ceres::Solver::Options options;
+                    options.num_threads = threads;
                     options.linear_solver_type = ceres::DENSE_QR;
                     options.max_num_iterations = 4;
                     options.minimizer_progress_to_stdout = false;
@@ -554,6 +557,10 @@ int main(int argc, char **argv)
             laserPath.poses.push_back(laserPose);
             laserPath.header.frame_id = "camera_init";
             pubLaserPath.publish(laserPath);
+
+            // Publish the optimized pose
+            laserPose.header.frame_id = "world";
+            pubOptimizedPose.publish(laserPose);
 
             // transform corner features and plane features to the scan end point
             if (0)

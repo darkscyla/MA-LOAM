@@ -7,4 +7,9 @@
     <arg name="gpu" value="$(arg gpu)" />
     <arg name="gui" value="$(arg gui)" />
   </include>
+
+  <include file="$(find ma_loam)/launch/aloam_mod/aloam_velodyne_VLP_16.launch">
+    <arg name="rviz" value="false" />
+  </include>
+
 </launch>

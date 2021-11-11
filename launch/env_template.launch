@@ -53,6 +53,6 @@
   <node pkg="tf" type="static_transform_publisher" name="sensor" args="0 0 0 0 0 0 1 /world /camera_init  100" />
 
   <!-- Load the CICP node -->
-  <node name="cluster_icp_node" pkg="ma_loam" type="ma_loam_runner" output="screen" />
+  <!-- <node name="cluster_icp_node" pkg="ma_loam" type="ma_loam_runner" output="screen" /> -->
 
 </launch>

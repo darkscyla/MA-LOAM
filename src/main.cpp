@@ -9,10 +9,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
-#include <ros/package.h>
 #include <ros/ros.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/transform_listener.h>
 
 // --- Standard Includes ---
 #include <thread>
@@ -38,27 +35,10 @@ public:
     ma_loam::set_threads(nh_, threads_);
     ma_loam::set_initial_pose(nh_, global_pose_);
     set_log_lvl();
-    init_ = set_static_tranform();
+    init_ = true;
   }
 
 private:
-  bool
-  set_static_tranform() {
-    tf2_ros::Buffer tf_buffer;
-    tf2_ros::TransformListener listener(tf_buffer);
-
-    try {
-      transform_ = tf_buffer.lookupTransform("velodyne", "base_footprint",
-                                             ros::Time(0), ros::Duration(10));
-    } catch (const tf2::TransformException &_ex) {
-      ROS_ERROR_STREAM("Unable to get the transform between the sensor frame "
-                       "and base_footprint: "
-                       << _ex.what());
-      return false;
-    }
-    return true;
-  }
-
   void
   set_log_lvl() {
     // Check if should print optimization solution
@@ -84,8 +64,8 @@ private:
 
     // Solve the minimization probelm
     ceres::Problem problem;
-    cicp_ros_.setup_problem(problem, new ceres::HuberLoss(1.0), global_pose_, quaternion_,
-                            translation_);
+    cicp_ros_.setup_problem(problem, new ceres::HuberLoss(0.1), global_pose_,
+                            quaternion_, translation_);
 
     // Add parametrization for quaternion as all 4 components are not
     // independent
@@ -130,7 +110,6 @@ private:
     pose.pose.orientation.y = global_pose_.quat.y();
     pose.pose.orientation.z = global_pose_.quat.z();
     pose.pose.orientation.w = global_pose_.quat.w();
-    tf2::doTransform(pose.pose, pose.pose, transform_);
 
     pose_pub_.publish(pose);
   }
@@ -152,7 +131,6 @@ private:
   ros::NodeHandle nh_;
   ros::Subscriber pcl_sub_;
   ros::Publisher pose_pub_;
-  geometry_msgs::TransformStamped transform_;
 
   // Local and global translation and orientation for ceres. We do not wrap the
   // local pose for ceres

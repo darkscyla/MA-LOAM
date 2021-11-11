@@ -1,0 +1,6 @@
+# A-LOAM parameters
+scan_line: 16
+mapping_skip_frame: 1
+minimum_range: 0.3
+mapping_line_resolution: 0.2
+mapping_plane_resolution: 0.4
