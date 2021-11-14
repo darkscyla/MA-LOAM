@@ -85,6 +85,10 @@ double timeSurfPointsFlat = 0;
 double timeSurfPointsLessFlat = 0;
 double timeLaserCloudFullRes = 0;
 
+double cornerFeatureWeight = 1.0;
+double surfaceFeatureWeight = 1.0;
+double meshFeatureWeight = 1.0;
+
 pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtreeCornerLast(new pcl::KdTreeFLANN<pcl::PointXYZI>());
 pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr kdtreeSurfLast(new pcl::KdTreeFLANN<pcl::PointXYZI>());
 
@@ -203,6 +207,10 @@ int main(int argc, char **argv)
     ma_loam::set_initial_pose(nh, w_curr);
     ma_loam::cicp_ros cicp_ros;
     ma_loam::cicp_ros::cloud_ptr_t full_cloud(new ma_loam::cicp_ros::cloud_t);
+    
+    nh.param<double>("corner_weight", 1.0);
+    nh.param<double>("surface_weight", 1.0);
+    nh.param<double>("mesh_weight", 1.0);
 
     nh.param<int>("mapping_skip_frame", skipFrameNum, 2);
 
@@ -291,14 +299,28 @@ int main(int argc, char **argv)
             {
                 int cornerPointsSharpNum = cornerPointsSharp->points.size();
                 int surfPointsFlatNum = surfPointsFlat->points.size();
-                const auto cornerPointsWeight = 1.0 / cornerPointsSharpNum;
-                const auto surfacePointsWeight = 1.0 / surfPointsFlatNum;
 
                 // Convert the full point cloud to CICP compatible type and run CICP
                 TicToc t_cicp_preprocessing;
                 pcl::copyPointCloud(*laserCloudFullRes, *full_cloud);
                 cicp_ros.set_input_cloud(full_cloud);
                 printf("CICP ROS pre-processing took %f \n", t_cicp_preprocessing.toc());
+
+                // Compute the weighting factors. We use them to normalize
+                // weights
+                auto corner_weight = cornerFeatureWeight * cornerPointsSharpNum;
+                auto surface_weight = surfaceFeatureWeight * surfPointsFlatNum;
+                auto mesh_weight = meshFeatureWeight * cicp_ros.size();
+
+                // Normalize them
+                {
+                  const auto total_weight = corner_weight + surface_weight + mesh_weight;
+                  if (total_weight) {
+                    corner_weight /= total_weight;
+                    surface_weight /= total_weight;
+                    mesh_weight /= total_weight;
+                  }
+                }
 
                 TicToc t_opt;
                 for (size_t opti_counter = 0; opti_counter < 2; ++opti_counter)
@@ -403,7 +425,7 @@ int main(int argc, char **argv)
                                 s = (cornerPointsSharp->points[i].intensity - int(cornerPointsSharp->points[i].intensity)) / SCAN_PERIOD;
                             else
                                 s = 1.0;
-                            ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s, cornerPointsWeight);
+                            ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s, corner_weight);
                             problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
                             corner_correspondence++;
                         }
@@ -501,14 +523,14 @@ int main(int argc, char **argv)
                                     s = (surfPointsFlat->points[i].intensity - int(surfPointsFlat->points[i].intensity)) / SCAN_PERIOD;
                                 else
                                     s = 1.0;
-                                ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s, surfacePointsWeight);
+                                ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s, surface_weight);
                                 problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
                                 plane_correspondence++;
                             }
                         }
                     }
 
-                    cicp_ros.setup_problem(problem, loss_function, w_curr, para_q, para_t);
+                    cicp_ros.setup_problem(problem, loss_function, w_curr, para_q, para_t, mesh_weight);
 
                     //printf("coner_correspondance %d, plane_correspondence %d \n", corner_correspondence, plane_correspondence);
                     printf("data association time %f ms \n", t_data.toc());

@@ -64,8 +64,9 @@ private:
 
     // Solve the minimization probelm
     ceres::Problem problem;
+    const auto weight = 1.0 / cicp_ros_.size();
     cicp_ros_.setup_problem(problem, new ceres::HuberLoss(0.1), global_pose_,
-                            quaternion_, translation_);
+                            quaternion_, translation_, weight);
 
     // Add parametrization for quaternion as all 4 components are not
     // independent

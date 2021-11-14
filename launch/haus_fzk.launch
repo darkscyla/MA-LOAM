@@ -1,0 +1,15 @@
+<launch>
+  <arg name="gpu" default="false" />
+  <arg name="gui" default="false" />
+
+  <include file="$(find ma_loam)/launch/env_template.launch">
+    <arg name="environment" value="haus_fzk" />
+    <arg name="gpu" value="$(arg gpu)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="sensor_pose" value="[6.0, -2.0, 0.0, 0.0, 0.0, 0.0, 1.0]" />
+  </include>
+
+  <include file="$(find ma_loam)/launch/aloam_mod/aloam_velodyne_VLP_16.launch">
+    <arg name="rviz" value="false" />
+  </include>
+</launch>

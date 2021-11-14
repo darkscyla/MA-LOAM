@@ -155,17 +155,12 @@ void
 cicp_ros::setup_problem(ceres::Problem &_problem,
                         ceres::LossFunction *_loss_function,
                         const pose_wrapper &_global_pose, double *_quaternion,
-                        double *_translation) const {
+                        double *_translation, const double _weight) const {
   // Add contribution only if mesh exists
   if (!mesh_.empty()) {
-    // Compute the relative weight of the geometric features
-    const auto cardinality =
-        std::max<int>(cloud_->points.size(), min_cardinality_);
-    const auto weight = lambda_ / cardinality;
-
     for (const auto &point : cloud_->points) {
       _problem.AddResidualBlock(
-          point_to_mesh_cost::create(mesh_, point, _global_pose, weight),
+          point_to_mesh_cost::create(mesh_, point, _global_pose, _weight),
           _loss_function, _quaternion, _translation);
     }
   }
@@ -200,10 +195,6 @@ cicp_ros::load_params() {
 
   nh_.param<float>("voxel_size", voxel_size_, 0.1);
   nh_.param<float>("merge_eps", merge_eps_, 0.25);
-
-  // Get the R-LOAM parameters
-  nh_.param<int>("min_cardinality", min_cardinality_, 100);
-  nh_.param<float>("lambda", lambda_, 1);
 
   // We do not setup visualization stuff unless requested
   nh_.param<bool>("visualize", visualize_, false);

@@ -51,11 +51,22 @@ public:
    * transform the local points to global
    * @param[in] _quaternion Pointer to quaternion array to optimize
    * @param[in] _translation Pointer to translation array to optimize
+   * @param[in] _weight Weight of the mesh feature
    */
   void
   setup_problem(ceres::Problem &_problem, ceres::LossFunction *_loss_function,
                 const pose_wrapper &_global_pose, double *_quaternion,
-                double *_translation) const;
+                double *_translation, double _weight) const;
+
+  /**
+   * @brief Returns the number of points in the point cloud
+   * 
+   * @return size_t Size of the clustered point cloud
+   */
+  size_t
+  size() const {
+    return cloud_->points.size();
+  }
 
 private:
   /**
@@ -88,10 +99,6 @@ private:
   float merge_eps_;  ///> Difference to tolerate for merging
                      ///> This distance d can be converted to angle
                      ///> using theta = 2 * asin( d / 2)
-
-  // R-LOAM parameters
-  int min_cardinality_; ///> Minimum cardinality of geometric features
-  float lambda_;        ///> Relative weight of the geometric features
 
   // Visualization
   using pub_ptr = std::unique_ptr<ros::Publisher>;
