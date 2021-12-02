@@ -168,14 +168,24 @@ cicp_ros::setup_problem(ceres::Problem &_problem,
 
 std::string
 cicp_ros::fetch_environment_path() const {
+  // Get the base environment name
   std::string env_name;
   if (!nh_.getParam("environment_name", env_name)) {
-    ROS_WARN("Unable to fetch environment name from the param server");
+    ROS_WARN(
+        "CICP ROS: Unable to fetch environment name from the param server");
     return {};
   }
 
-  return ros::package::getPath("ma_loam") + "/resources/environments/" +
-         env_name + "/" + env_name + ".stl";
+  // Get the post-fix tag. This allows us to specify different models for LIDAR
+  // scan and point to mesh correspondences
+  std::string postfix;
+  nh_.param<std::string>("mesh_postfix", postfix, "");
+
+  const std::string full_path = ros::package::getPath("ma_loam") +
+                                "/resources/environments/" + env_name + "/" +
+                                env_name + postfix + ".stl";
+  ROS_INFO_STREAM("CICP ROS: Full path to mesh file is: " << full_path);
+  return full_path;
 }
 
 void

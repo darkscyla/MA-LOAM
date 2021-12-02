@@ -133,7 +133,7 @@ def parse_pose(pose: List[float]) -> Optional[List[float]]:
     return None
 
 
-if __name__ == "__main__":
+def main() -> None:
     rospy.init_node("model_state_node")
 
     # Fetch sensor info
@@ -151,3 +151,7 @@ if __name__ == "__main__":
     # Allows update through cmd vel topic
     model_pose.listen()
     rospy.spin()
+
+
+if __name__ == "__main__":
+    main()

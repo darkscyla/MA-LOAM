@@ -52,7 +52,7 @@ class SensorTF:
         self.tf_rate.sleep()
 
 
-if __name__ == "__main__":
+def main() -> None:
     rospy.init_node("sensor_tf_node")
 
     sensor_tf = SensorTF()
@@ -62,3 +62,7 @@ if __name__ == "__main__":
     else:
         sensor_tf.run()
         rospy.spin()
+
+
+if __name__ == "__main__":
+    main()

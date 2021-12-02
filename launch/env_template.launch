@@ -2,6 +2,9 @@
   <!-- Required Arguments -->
   <arg name="environment" />
 
+  <!-- Mesh model postfix. Allows specifying different model for point to mesh correspondences -->
+  <arg name="mesh_postfix" default="" />
+
   <!-- Load in the config -->
   <rosparam command="load" file="$(find ma_loam)/config/config.yaml" />
 
@@ -11,6 +14,7 @@
   <arg name="pause" default="false" />
   <arg name="world" default="$(find ma_loam)/resources/environments/$(arg environment)/$(arg environment).world" />
   <rosparam param="environment_name" subst_value="true">$(arg environment)</rosparam>
+  <rosparam param="mesh_postfix" subst_value="true">$(arg mesh_postfix)</rosparam>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <!-- Arguments  -->
@@ -33,7 +37,7 @@
   <!-- Load in the sensor -->
   <arg name="gpu" default="false" />
   <arg name="organize_cloud" default="false" />
-  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find ma_loam)/resources/urdf/$(arg sensor_name).xacro' organize_cloud:=$(arg organize_cloud) gpu:=$(arg gpu)" />
+  <param name="robot_description" command="$(find xacro)/xacro '$(find ma_loam)/resources/urdf/$(arg sensor_name).xacro' organize_cloud:=$(arg organize_cloud) gpu:=$(arg gpu)" />
   <node pkg="gazebo_ros" type="spawn_model" name="spawn_model" args="-urdf -param /robot_description -model $(arg sensor_name)" />
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
     <param name="publish_frequency" type="double" value="10.0" />
