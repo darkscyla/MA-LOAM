@@ -1,12 +1,14 @@
 <launch>
   <arg name="gpu" default="false" />
-  <arg name="gui" default="false" />
+  <arg name="gazebo" default="false" />
+  <arg name="mesh_postfix" default="" />
 
   <include file="$(find ma_loam)/launch/env_template.launch">
     <arg name="environment" value="haus_fzk" />
     <arg name="gpu" value="$(arg gpu)" />
-    <arg name="gui" value="$(arg gui)" />
-    <arg name="sensor_pose" value="[6.0, 1.5, 0.0, 0.0, 0.0, 0.0, 1.0]" />
+    <arg name="gui" value="$(arg gazebo)" />
+    <arg name="mesh_postfix" value="$(arg mesh_postfix)" />
+    <arg name="sensor_pose" value="[6.0, 1.5, 0.0, 0.0, 0.0, 0.7071067811865475, 0.7071067811865475]" />
   </include>
 
   <include file="$(find ma_loam)/launch/aloam_mod/aloam_velodyne_VLP_16.launch">
