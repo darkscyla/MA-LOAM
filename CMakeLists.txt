@@ -84,7 +84,7 @@ target_include_directories(${PROJECT_NAME}_odometry PUBLIC
   ${CERES_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_odometry PUBLIC
-  ${PROJECT_NAME} 
+  ${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
   ${PCL_LIBRARIES})
@@ -98,6 +98,7 @@ target_include_directories(${PROJECT_NAME}_mapping PUBLIC
   ${CERES_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_mapping PUBLIC
+  ${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
   ${PCL_LIBRARIES})

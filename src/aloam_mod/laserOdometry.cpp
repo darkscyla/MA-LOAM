@@ -208,9 +208,9 @@ int main(int argc, char **argv)
     ma_loam::cicp_ros cicp_ros;
     ma_loam::cicp_ros::cloud_ptr_t full_cloud(new ma_loam::cicp_ros::cloud_t);
     
-    nh.param<double>("corner_weight", 1.0);
-    nh.param<double>("surface_weight", 1.0);
-    nh.param<double>("mesh_weight", 1.0);
+    cornerFeatureWeight = nh.param<double>("corner_weight", 1.0);
+    surfaceFeatureWeight = nh.param<double>("surface_weight", 1.0);
+    meshFeatureWeight = nh.param<double>("mesh_weight", 1.0);
 
     nh.param<int>("mapping_skip_frame", skipFrameNum, 2);
 
@@ -304,23 +304,27 @@ int main(int argc, char **argv)
                 TicToc t_cicp_preprocessing;
                 pcl::copyPointCloud(*laserCloudFullRes, *full_cloud);
                 cicp_ros.set_input_cloud(full_cloud);
-                printf("CICP ROS pre-processing took %f \n", t_cicp_preprocessing.toc());
+                std::cout << "CICP ROS pre-processing took " << t_cicp_preprocessing.toc() << " ms\n";
+
+                std::cout << "Number of corner features: " << cornerPointsSharpNum  << "\n";
+                std::cout << "Number of surface features: " << surfPointsFlatNum  << "\n";
+                std::cout << "Number of mesh features: " << cicp_ros.size()  << "\n";
 
                 // Compute the weighting factors. We use them to normalize
                 // weights
-                auto corner_weight = cornerFeatureWeight * cornerPointsSharpNum;
-                auto surface_weight = surfaceFeatureWeight * surfPointsFlatNum;
-                auto mesh_weight = meshFeatureWeight * cicp_ros.size();
+                // auto corner_weight = cornerFeatureWeight * cornerPointsSharpNum;
+                // auto surface_weight = surfaceFeatureWeight * surfPointsFlatNum;
+                // auto mesh_weight = meshFeatureWeight * cicp_ros.size();
 
-                // Normalize them
-                {
-                  const auto total_weight = corner_weight + surface_weight + mesh_weight;
-                  if (total_weight) {
-                    corner_weight /= total_weight;
-                    surface_weight /= total_weight;
-                    mesh_weight /= total_weight;
-                  }
-                }
+                // // Normalize them
+                // {
+                //   const auto total_weight = corner_weight + surface_weight + mesh_weight;
+                //   if (total_weight) {
+                //     corner_weight /= total_weight;
+                //     surface_weight /= total_weight;
+                //     mesh_weight /= total_weight;
+                //   }
+                // }
 
                 TicToc t_opt;
                 for (size_t opti_counter = 0; opti_counter < 2; ++opti_counter)
@@ -425,7 +429,7 @@ int main(int argc, char **argv)
                                 s = (cornerPointsSharp->points[i].intensity - int(cornerPointsSharp->points[i].intensity)) / SCAN_PERIOD;
                             else
                                 s = 1.0;
-                            ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s, corner_weight);
+                            ceres::CostFunction *cost_function = LidarEdgeFactor::Create(curr_point, last_point_a, last_point_b, s, cornerFeatureWeight);
                             problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
                             corner_correspondence++;
                         }
@@ -523,14 +527,14 @@ int main(int argc, char **argv)
                                     s = (surfPointsFlat->points[i].intensity - int(surfPointsFlat->points[i].intensity)) / SCAN_PERIOD;
                                 else
                                     s = 1.0;
-                                ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s, surface_weight);
+                                ceres::CostFunction *cost_function = LidarPlaneFactor::Create(curr_point, last_point_a, last_point_b, last_point_c, s, surfaceFeatureWeight);
                                 problem.AddResidualBlock(cost_function, loss_function, para_q, para_t);
                                 plane_correspondence++;
                             }
                         }
                     }
 
-                    cicp_ros.setup_problem(problem, loss_function, w_curr, para_q, para_t, mesh_weight);
+                    cicp_ros.setup_problem(problem, loss_function, w_curr, para_q, para_t, meshFeatureWeight);
 
                     //printf("coner_correspondance %d, plane_correspondence %d \n", corner_correspondence, plane_correspondence);
                     printf("data association time %f ms \n", t_data.toc());

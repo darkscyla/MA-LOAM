@@ -16,11 +16,14 @@
 
     <node pkg="ma_loam" type="ma_loam_odometry" name="alaserOdometry" output="screen" />
 
-    <!-- <node pkg="ma_loam" type="ma_loam_mapping" name="alaserMapping" output="screen" /> -->
+    <arg name="mapping" default="false" />
+    <group if="$(arg mapping)">
+        <node pkg="ma_loam" type="ma_loam_mapping" name="alaserMapping" output="screen" />
+    </group>
 
     <arg name="rviz" default="true" />
     <group if="$(arg rviz)">
-        <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find ma_loam)/rviz/aloam_mod/aloam_velodyne.rviz" />
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find ma_loam)/rviz/aloam_mod/aloam_velodyne_mapping.rviz" />
     </group>
 
 </launch>

@@ -54,7 +54,7 @@
   <node if="$(arg rviz)" type="rviz" name="$(anon rviz)" pkg="rviz" respawn="false" output="screen" args="-d $(find ma_loam)/rviz/config.rviz" />
 
   <!-- Publish transform between world and camera init(part of a-loam) -->
-  <node pkg="tf" type="static_transform_publisher" name="sensor" args="0 0 0 0 0 0 1 /world /camera_init  100" />
+  <node pkg="tf" type="static_transform_publisher" name="sensor" args="0 0 0 0 0 0 1 world camera_init  100" />
 
   <!-- Load the CICP node -->
   <!-- <node name="cluster_icp_node" pkg="ma_loam" type="ma_loam_runner" output="screen" /> -->

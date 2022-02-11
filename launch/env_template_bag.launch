@@ -1,0 +1,27 @@
+<launch>
+  <!-- Required Arguments -->
+  <arg name="environment" />
+
+  <!-- Mesh model postfix. Allows specifying different model for point to mesh correspondences -->
+  <arg name="mesh_postfix" default="" />
+
+  <!-- Load the args to the param server -->
+  <rosparam param="environment_name" subst_value="true">$(arg environment)</rosparam>
+  <rosparam param="mesh_postfix" subst_value="true">$(arg mesh_postfix)</rosparam>
+
+  <!-- Load in the config -->
+  <rosparam command="load" file="$(find ma_loam)/config/config.yaml" />
+
+  <!-- Sensor name and pose -->
+  <arg name="sensor_name" default="vlp_16" />
+  <param name="sensor_name" type="string" value="$(arg sensor_name)" />
+  <arg name="sensor_pose" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]" />
+  <rosparam param="sensor_pose_init" subst_value="true">$(arg sensor_pose)</rosparam>
+
+  <!-- Load rviz -->
+  <!-- <arg name="rviz" default="true" />
+  <node if="$(arg rviz)" type="rviz" name="$(anon rviz)" pkg="rviz" respawn="false" output="screen" args="-d $(find ma_loam)/rviz/config.rviz" /> -->
+
+  <!-- Publish transform between world and camera init(part of a-loam) -->
+  <node pkg="tf" type="static_transform_publisher" name="sensor" args="0 0 0 0 0 0 1 world camera_init  100" />
+</launch>

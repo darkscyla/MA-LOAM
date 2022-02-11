@@ -147,7 +147,9 @@ kmeans_optimizer::optimize(size_t _max_clusters, size_t _min_cluster_elements,
                                    (data_.size() / _min_cluster_elements) + 1);
 
   // Compute the distance matrix as it will be used for k means optimization
-  compute_distance_matrix();
+  if(_max_clusters > 2) {
+    compute_distance_matrix();
+  }
 
   auto best_sil = -std::numeric_limits<float>::infinity();
   ClustersToPoints best_cluster;
@@ -163,7 +165,8 @@ kmeans_optimizer::optimize(size_t _max_clusters, size_t _min_cluster_elements,
     kMeans();
 
     // Check if current fit is better
-    const auto curr_sil = compute_silhouette_coefficient();
+    const auto curr_sil =
+        _max_clusters == 2 ? 0 : compute_silhouette_coefficient();
     if (curr_sil > best_sil) {
       // Copy only those clusters that are associated with at least
       // _min_cluster_elements

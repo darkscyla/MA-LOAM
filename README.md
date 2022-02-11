@@ -22,19 +22,7 @@ Blensor is not enough for our needs. It is hard to automate and also does not pr
 
 ### Clone from git
 
-This package uses git large file storage (lfs) to store the environments CAD models. On Ubuntu, you can install it using:
-
-```bash
-apt install git-lfs
-```
-
-You might need elevated privileges depending on your setup. Afterwards, setup git lfs using:
-
-```bash
-git lfs install
-```
-
-Finally, clone this like any other standard git repository
+Just clone like any other repository. Initially, large files were on git LFS thus requiring special treatment but now, it has been cleaned.
 
 ### Build and run 
 

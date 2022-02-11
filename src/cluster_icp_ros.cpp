@@ -107,6 +107,7 @@ cicp_ros::set_input_cloud(cloud_ptr_const_t _input_cloud) {
   // Go over the voxel grid and try to prune them using k means clustering
   cloud_->clear();
   cloud_->header.frame_id = _input_cloud->header.frame_id;
+  sizes_.clear();
 
   for (auto itt = voxel_grid->leaf_depth_begin(),
             itt_end = voxel_grid->leaf_depth_end();
@@ -139,6 +140,7 @@ cicp_ros::set_input_cloud(cloud_ptr_const_t _input_cloud) {
       }
       center /= opt_indices.size();
       cloud_->push_back({center.x(), center.y(), center.z()});
+      sizes_.push_back(opt_indices.size());
     }
   }
 
@@ -156,11 +158,33 @@ cicp_ros::setup_problem(ceres::Problem &_problem,
                         ceres::LossFunction *_loss_function,
                         const pose_wrapper &_global_pose, double *_quaternion,
                         double *_translation, const double _weight) const {
-  // Add contribution only if mesh exists
-  if (!mesh_.empty()) {
-    for (const auto &point : cloud_->points) {
+  // Add contribution only if mesh exists or mesh features required
+  if (!mesh_.empty() && max_mesh_features_ > 0) {
+    // Get the best features
+    size_t n_pts = cloud_->points.size();
+    std::vector<size_t> indices(n_pts);
+    std::iota(indices.begin(), indices.end(), 0ul);
+
+    // Sort only if we have more features than the max limit. Distance from the
+    // scanner is also taken into consideration as near points are more likely
+    // to be clumped up together
+    if (static_cast<int>(n_pts) > max_mesh_features_) {
+      std::vector<float> weights(n_pts);
+      for (size_t idx = 0; idx < n_pts; ++idx) {
+        weights[idx] =
+            cloud_->points[idx].getVector3fMap().norm() * sizes_[idx];
+      }
+      std::sort(indices.begin(), indices.end(),
+                [&weights](const size_t _l, const size_t _r) {
+                  return weights[_l] > weights[_r];
+                });
+    }
+
+    const auto max_mf = std::min<size_t>(max_mesh_features_, n_pts);
+    for (size_t idx = 0; idx < max_mf; ++idx) {
       _problem.AddResidualBlock(
-          point_to_mesh_cost::create(mesh_, point, _global_pose, _weight),
+          point_to_mesh_cost::create(mesh_, cloud_->points[indices[idx]],
+                                     _global_pose, _weight),
           _loss_function, _quaternion, _translation);
     }
   }
@@ -205,6 +229,12 @@ cicp_ros::load_params() {
 
   nh_.param<float>("voxel_size", voxel_size_, 0.1);
   nh_.param<float>("merge_eps", merge_eps_, 0.25);
+
+  // Get max mesh features
+  {
+    int max_mf = nh_.param<int>("max_mesh_features", -1);
+    max_mesh_features_ = max_mf < 0 ? std::numeric_limits<int>::max() : max_mf;
+  }
 
   // We do not setup visualization stuff unless requested
   nh_.param<bool>("visualize", visualize_, false);
