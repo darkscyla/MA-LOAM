@@ -2,10 +2,6 @@
 
 Given a 3D model of the environment as a prior, incorporates it in SLAM calculations for better accuracy
 
-## How to clone from git
-
-Just clone like any other repository. Initially, large files were on git LFS thus requiring special treatment but now, it has been cleaned.
-
 ## How to build
 
 Clone this package in a catkin workspace, change directory to it and build the package using (given that you have all the dependencies installed):
@@ -15,7 +11,6 @@ catkin build --this --no-deps --cmake-args  -DCMAKE_BUILD_TYPE=Release
 ```
 
 For more detail (or in case your workspace was not setup using `catkin-tools`), take a look [here](https://answers.ros.org/question/54178/how-to-build-just-one-package-using-catkin_make/).
-
 
 ## How to run
 There are different ways to run MA-LOAM. Read instructions below for more detail. 
@@ -63,6 +58,35 @@ Finally, a frame between robot `base_footprint` and `velodyne` must be published
 ### With your model
 
 Running your own models should be easy. Just take a look at provided examples and follow the naming convention for the environment files.
+
+## How to evaluate trajectories
+
+For trajectories evaluation, [evo](https://github.com/MichaelGrupp/evo) tools are used.
+
+To record the optimized pose, run the following:
+
+```bash
+rosbag record -O traj.bag /optimized_pose /tf /tf_static
+```
+
+To evaluate the translation and rotational absolute pose errors with respect to the ground truth:
+
+```bash
+evo_ape bag traj.bag /tf:world.velodyne /optimized_pose -v -p --plot_mode xy --t_max_diff 0.05  # Translation
+evo_ape bag traj.bag /tf:world.velodyne /optimized_pose -v -p --plot_mode xy --t_max_diff 0.05 --pose_relation angle_deg # Rotation
+```
+
+It is also possible to extract the trajectories from different bags and compare them. For example:
+
+```bash
+evo_traj bag my_bag.bag /tf:robot_odom.robot_top_3d_laser_link --save_as_tum
+mv tf_robot_odom.robot_top_3d_laser_link.tum gt_odom.tum
+
+evo_traj bag traj.bag /optimized_pose --save_as_tum
+mv optimized_pose.tum ma_loam.tum
+
+evo_ape tum gt_odom.tum aloam.tum  -av -p --plot_mode xy --t_max_diff 0.05 # With Umeyama alignment with -a flag
+```
 
 ## Deep Global Registration
 
