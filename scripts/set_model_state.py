@@ -138,13 +138,13 @@ def main() -> None:
 
     # Fetch sensor info
     sensor_name = rospy.get_param("sensor_name")
-    raw_pose = rospy.get_param("sensor_pose_init", [])
-    sensor_pose = parse_pose(raw_pose)
+    raw_pose = rospy.get_param("rob_pose_init", [])
+    rob_pose = parse_pose(raw_pose)
 
     model_pose = ModelStateSetter(sensor_name)
 
-    if sensor_pose:
-        model_pose.set_model_pose(sensor_pose)
+    if rob_pose:
+        model_pose.set_model_pose(rob_pose)
     else:
         rospy.logerr(f"Invalid pose format: {raw_pose}")
 

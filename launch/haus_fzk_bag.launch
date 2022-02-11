@@ -1,17 +1,19 @@
 <launch>
   <arg name="mesh_postfix" default="" />
+  <arg name="mapping" default="false" />
 
   <include file="$(find ma_loam)/launch/env_template_bag.launch">
     <arg name="environment" value="empty_room" />
     <arg name="mesh_postfix" value="$(arg mesh_postfix)" />
-    <arg name="sensor_pose" value="[6.0, 1.5, 0.0, 0.0, 0.0, 0.7071067811865475, 0.7071067811865475]" />
+    <arg name="rob_pose" value="[6.0, 1.5, 0.0, 0.0, 0.0, 0.7071067811865475, 0.7071067811865475]" />
   </include>
 
   <include file="$(find ma_loam)/launch/aloam_mod/aloam_velodyne_VLP_16.launch">
-    <arg name="rviz" value="true" />
+    <arg name="rviz" value="$(arg mapping)" />
+    <arg name="mapping" value="$(arg mapping)" />
   </include>
 
-  <!-- <node pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen" args="-d $(find ma_loam)/rviz/empty_room.rviz" /> -->
+  <node pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen" args="-d $(find ma_loam)/rviz/empty_room.rviz" if="$(eval not arg('mapping'))"/>
 
   <!-- Publish the transform between base footprint and sensor frame. 
        Can be set to identity but then the sensor pose should be adjusted -->

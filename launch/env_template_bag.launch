@@ -15,8 +15,8 @@
   <!-- Sensor name and pose -->
   <arg name="sensor_name" default="vlp_16" />
   <param name="sensor_name" type="string" value="$(arg sensor_name)" />
-  <arg name="sensor_pose" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]" />
-  <rosparam param="sensor_pose_init" subst_value="true">$(arg sensor_pose)</rosparam>
+  <arg name="rob_pose" default="[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]" />
+  <rosparam param="rob_pose_init" subst_value="true">$(arg rob_pose)</rosparam>
 
   <!-- Load rviz -->
   <!-- <arg name="rviz" default="true" />

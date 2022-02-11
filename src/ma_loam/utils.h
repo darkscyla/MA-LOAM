@@ -64,7 +64,7 @@ set_threads(const ros::NodeHandle &nh, unsigned int &_threads) {
 
 void
 set_initial_pose(const ros::NodeHandle &nh, pose_wrapper &_pose) {
-  const auto raw_pose = parse_pose(nh, "sensor_pose_init");
+  const auto raw_pose = parse_pose(nh, "rob_pose_init");
   if (raw_pose.size() == 7) {
     // Transform the sensor pose given the robot pose
     tf2_ros::Buffer tf_buffer;
