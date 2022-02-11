@@ -2,22 +2,6 @@
 
 Given a 3D model of the environment as a prior, incorporates it in SLAM calculations for better accuracy
 
-## Progress
-
-- [x] Setup a simulation environment for virtual lidar sensors
-- [x] Implement a variation of cluster iterative closest point
-  - [x] Selection
-  - [x] Matching
-  - [x] Weighting
-  - [x] Rejection
-  - [x] Error metrics
-  - [x] Minimization
-- [ ] Integrate it into LOAM framework
-
-### General comments on work in progress
-
-Blensor is not enough for our needs. It is hard to automate and also does not provides the true pose of the scan origin. I will try out gazebo. If it becomes too expensive to run, we can record the scan data into rosbags and play it back later on
-
 ## How to
 
 ### Clone from git
